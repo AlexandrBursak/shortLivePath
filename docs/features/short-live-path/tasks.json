@@ -1,0 +1,498 @@
+{
+  "slug": "short-live-path",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Resolve verifier budgets and trusted-address continuity",
+      "layer": "docs",
+      "deps": [],
+      "acs": [
+        "AC-06",
+        "AC-07"
+      ],
+      "files_hint": [
+        "docs/features/short-live-path/adr/",
+        "docs/features/short-live-path/data-model.md",
+        "docs/features/short-live-path/contracts/openapi.yaml"
+      ],
+      "file": "docs/features/short-live-path/tasks/resolve-verifier-address-policy.md",
+      "dod": "Decision review verifies DM-OQ-01/05 have concrete reviewed values, benchmark evidence and spoofing/restart/rotation test vectors; no unresolved value is marked approved."
+    },
+    {
+      "id": "T2",
+      "title": "Resolve publication, clock and reservation state machines",
+      "layer": "docs",
+      "deps": [],
+      "acs": [
+        "AC-01",
+        "AC-04",
+        "AC-07",
+        "AC-10",
+        "AC-11"
+      ],
+      "files_hint": [
+        "docs/features/short-live-path/adr/",
+        "docs/features/short-live-path/sad.md",
+        "docs/features/short-live-path/data-model.md",
+        "docs/features/short-live-path/contracts/openapi.yaml",
+        "docs/features/short-live-path/contracts/events.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/resolve-time-admission-protocol.md",
+      "dod": "State-machine review walks success, uncertainty, stale-owner, clock-rollback and recovery vectors against AC-04/07/10/11; all DM-OQ-02/03/04 choices are reviewed before this gate closes."
+    },
+    {
+      "id": "T3",
+      "title": "Bootstrap the backend with executable quality gates",
+      "layer": "wiring",
+      "deps": [
+        "T1",
+        "T2"
+      ],
+      "acs": [
+        "AC-11"
+      ],
+      "files_hint": [
+        "backend/package.json",
+        "backend/pnpm-lock.yaml",
+        "backend/tsconfig.json",
+        "backend/eslint.config.mjs",
+        "backend/compose.yml",
+        "backend/docker/",
+        "backend/start/",
+        "backend/config/",
+        "backend/tests/",
+        "backend/docs/architecture.md",
+        "backend/app/middleware/"
+      ],
+      "file": "docs/features/short-live-path/tasks/bootstrap-backend.md",
+      "dod": "Docker backend smoke test, pnpm test/lint/typecheck/build scripts and a deliberately invalid layer-import fixture prove active gates; no sensitive endpoint serves before readiness."
+    },
+    {
+      "id": "T4",
+      "title": "Bootstrap the neutral frontend and register shared primitives",
+      "layer": "ui",
+      "deps": [
+        "T1",
+        "T2"
+      ],
+      "acs": [
+        "AC-08",
+        "AC-12"
+      ],
+      "files_hint": [
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/tsconfig.json",
+        "frontend/eslint.config.mjs",
+        "frontend/compose.yml",
+        "frontend/docker/",
+        "frontend/src/app/",
+        "frontend/src/shared/ui/",
+        "frontend/tests/",
+        "frontend/docs/architecture.md",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/bootstrap-frontend-canon.md",
+      "dod": "Neutral-shell/component tests prove no disclosure request on navigation, keyboard focus/labels/busy states at 360px, active layer lint and green Docker frontend test/lint/typecheck/build."
+    },
+    {
+      "id": "T5",
+      "title": "Promote the staged lifecycle migration and Lucid model",
+      "layer": "migration",
+      "deps": [
+        "T3"
+      ],
+      "acs": [
+        "AC-09",
+        "AC-11b"
+      ],
+      "files_hint": [
+        "docs/features/short-live-path/migrations/01_create_link_lifecycles.up.sql",
+        "docs/features/short-live-path/migrations/01_create_link_lifecycles.down.sql",
+        "backend/app/models/link_lifecycle.ts",
+        "backend/tests/integration/link_lifecycles.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/promote-lifecycle-migration.md",
+      "dod": "Disposable PostgreSQL integration tests apply/revert/reapply the promoted Lucid migration and test all 1–1440-minute durations, invalid digests/times, uniqueness and no sensitive columns."
+    },
+    {
+      "id": "T6",
+      "title": "Implement exact validation, token handling and bounded verification",
+      "layer": "domain",
+      "deps": [
+        "T3"
+      ],
+      "acs": [
+        "AC-02",
+        "AC-03",
+        "AC-05",
+        "AC-06",
+        "AC-07"
+      ],
+      "files_hint": [
+        "backend/app/validators/",
+        "backend/app/services/secret_validation_service.ts",
+        "backend/app/services/reading_code_service.ts",
+        "backend/app/services/link_token_service.ts",
+        "backend/tests/unit/secret_validation.spec.ts",
+        "backend/tests/unit/reading_code.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/validate-and-hash.md",
+      "dod": "AC-citing unit tests cover multibyte/exact multiline boundaries, surrogate rejection, canonical token padding bits, exact code comparison, malformed verifiers and reviewed work-queue exhaustion."
+    },
+    {
+      "id": "T7",
+      "title": "Implement bounded Redis payload and admission transitions",
+      "layer": "infra",
+      "deps": [
+        "T3",
+        "T6"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-07",
+        "AC-11"
+      ],
+      "files_hint": [
+        "backend/app/services/ephemeral_secret_service.ts",
+        "backend/app/services/admission_service.ts",
+        "backend/app/services/redis_scripts/",
+        "backend/tests/integration/admission.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/redis-admission-store.md",
+      "dod": "Real-Redis integration tests race both quotas and all caps, exercise exact rolling boundaries, short/failed/successful attempts, lease fencing, OOM/timeout partial outcomes and five-minute state retention."
+    },
+    {
+      "id": "T8",
+      "title": "Implement bounded cleanup and generation-fenced readiness",
+      "layer": "app",
+      "deps": [
+        "T5",
+        "T7"
+      ],
+      "acs": [
+        "AC-10",
+        "AC-11",
+        "AC-11b"
+      ],
+      "files_hint": [
+        "backend/app/services/cleanup_service.ts",
+        "backend/app/services/readiness_service.ts",
+        "backend/app/services/service_clock.ts",
+        "backend/start/maintenance.ts",
+        "backend/tests/integration/cleanup_recovery.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/cleanup-recovery.md",
+      "dod": "Real-Redis/PostgreSQL fault tests measure <=60s active deletion and prove cleanup-before-serving after suspension/reconnect, stale-owner fencing, PostgreSQL-outage cleanup and no early-payload recovery."
+    },
+    {
+      "id": "T9",
+      "title": "Implement confirmed creation and its HTTP boundary",
+      "layer": "ports",
+      "deps": [
+        "T5",
+        "T6",
+        "T7",
+        "T8"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-04",
+        "AC-05",
+        "AC-06"
+      ],
+      "files_hint": [
+        "backend/app/services/create_secret_service.ts",
+        "backend/app/controllers/create_secret_controller.ts",
+        "backend/app/validators/create_secret.ts",
+        "backend/start/routes.ts",
+        "backend/tests/integration/create_secret.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/create-secret.md",
+      "dod": "createSecret contract/integration tests assert 201/422/429/503, exact service-established successful timestamps, no link on uncertain commits, 25-success rolling quota and orphan nonextension."
+    },
+    {
+      "id": "T10",
+      "title": "Implement neutral status and durable lifecycle classification",
+      "layer": "ports",
+      "deps": [
+        "T5",
+        "T7",
+        "T8"
+      ],
+      "acs": [
+        "AC-08",
+        "AC-09",
+        "AC-11b"
+      ],
+      "files_hint": [
+        "backend/app/services/secret_status_service.ts",
+        "backend/app/controllers/secret_status_controller.ts",
+        "backend/start/routes.ts",
+        "backend/tests/integration/secret_status.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/neutral-status.md",
+      "dod": "getSecretStatus contract tests verify four 200 variants, malformed token stops before lookup, no fragments or mutation, known expiration after Redis restart and 503 for corruption/dependency uncertainty."
+    },
+    {
+      "id": "T11",
+      "title": "Implement explicit disclosure with final release checks",
+      "layer": "ports",
+      "deps": [
+        "T6",
+        "T7",
+        "T8",
+        "T10"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-07",
+        "AC-08",
+        "AC-10"
+      ],
+      "files_hint": [
+        "backend/app/services/disclose_secret_service.ts",
+        "backend/app/controllers/disclose_secret_controller.ts",
+        "backend/app/validators/disclose_secret.ts",
+        "backend/start/routes.ts",
+        "backend/tests/integration/disclose_secret.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/explicit-disclosure.md",
+      "dod": "discloseSecret tests cover all 200/403/409/410/422/429/503 outcomes, parallel five-failure reservations, repeat readers and delayed correct verification/readiness changes at final release."
+    },
+    {
+      "id": "T12",
+      "title": "Implement typed browser clients and conservative lifecycle guards",
+      "layer": "app",
+      "deps": [
+        "T4",
+        "T9",
+        "T10",
+        "T11"
+      ],
+      "acs": [
+        "AC-04",
+        "AC-10"
+      ],
+      "files_hint": [
+        "frontend/src/data/short_live_path/",
+        "frontend/src/entities/short_live_path/",
+        "frontend/src/shared/lib/eligible_deadline.ts",
+        "frontend/src/shared/lib/exact_copy.ts",
+        "frontend/tests/unit/lifecycle.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/browser-data-time.md",
+      "dod": "Deterministic client/clock tests cover wall-clock rollback, transit, suspend discontinuity, invalid/superseded late responses and stale clipboard callbacks with zero late display eligibility."
+    },
+    {
+      "id": "T13",
+      "title": "Build the exact creation form and lifetime/code controls",
+      "layer": "ui",
+      "deps": [
+        "T4",
+        "T12"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-04",
+        "AC-05",
+        "AC-06"
+      ],
+      "files_hint": [
+        "frontend/src/view/forms/create_secret/",
+        "frontend/src/view/components/lifetime_control/",
+        "frontend/src/view/components/reading_code_control/",
+        "frontend/src/app/page.tsx",
+        "frontend/tests/components/create_secret.spec.ts",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/create-form.md",
+      "dod": "SCR-01 component tests cover every manifest state, 1/60/61/1440/fractional minute interactions, multibyte size boundary, code point/generator behavior, retained input and single-submit/no-auto-retry."
+    },
+    {
+      "id": "T14",
+      "title": "Build guarded share confirmation and separate handover",
+      "layer": "ui",
+      "deps": [
+        "T4",
+        "T12",
+        "T13"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-04",
+        "AC-06",
+        "AC-12"
+      ],
+      "files_hint": [
+        "frontend/src/view/widgets/share_confirmation/",
+        "frontend/src/view/components/remaining_lifetime/",
+        "frontend/tests/components/share_confirmation.spec.ts",
+        "docs/design-system.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/share-confirmation.md",
+      "dod": "SCR-02 tests prove only confirmed link/code handover, separate exact copy, safe failure feedback, no credential repetition, accessible countdown and local expiry disabling all handover actions."
+    },
+    {
+      "id": "T15",
+      "title": "Build neutral reading gate and explicit Show interactions",
+      "layer": "ui",
+      "deps": [
+        "T4",
+        "T12",
+        "T14"
+      ],
+      "acs": [
+        "AC-07",
+        "AC-08",
+        "AC-09",
+        "AC-11b"
+      ],
+      "files_hint": [
+        "frontend/src/view/widgets/reading_gate/",
+        "frontend/src/app/s/[token]/page.tsx",
+        "frontend/tests/components/reading_gate.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/reading-gate.md",
+      "dod": "SCR-03 tests cover all manifest states, no POST on navigation/resume/status, explicit repeated Show, missing/wrong/short codes, shared-pair 429, safe 503/offline return and 409 reclassification."
+    },
+    {
+      "id": "T16",
+      "title": "Build exact reading and distinct unavailable screens",
+      "layer": "ui",
+      "deps": [
+        "T4",
+        "T12",
+        "T14",
+        "T15"
+      ],
+      "acs": [
+        "AC-03",
+        "AC-08",
+        "AC-09",
+        "AC-10",
+        "AC-11b",
+        "AC-12"
+      ],
+      "files_hint": [
+        "frontend/src/view/widgets/read_secret/",
+        "frontend/src/view/widgets/unavailable_secret/",
+        "frontend/src/view/components/exact_copy_field/",
+        "frontend/tests/components/read_secret.spec.ts",
+        "frontend/tests/components/unavailable_secret.spec.ts",
+        "docs/design-system.md",
+        "frontend/src/app/s/[token]/page.tsx",
+        "frontend/tests/integration/reading_route.spec.ts"
+      ],
+      "file": "docs/features/short-live-path/tasks/read-unavailable.md",
+      "dod": "SCR-04/05 tests assert byte-exact multiline field/clipboard text, denied-copy manual fallback, no script/link execution, all safe terminal states and no late/stale/partial content restoration. Reading-route integration tests prove status → explicit Show → SCR-04/05 and concealed return at the original URL."
+    },
+    {
+      "id": "T17",
+      "title": "Wire same-origin deployment and confidentiality controls",
+      "layer": "wiring",
+      "deps": [
+        "T3",
+        "T4",
+        "T8",
+        "T9",
+        "T10",
+        "T11",
+        "T16"
+      ],
+      "acs": [
+        "AC-08",
+        "AC-10",
+        "AC-11"
+      ],
+      "files_hint": [
+        "compose.yml",
+        "docker/",
+        "backend/config/",
+        "frontend/next.config.ts",
+        "backend/app/middleware/",
+        "backend/start/kernel.ts",
+        "docs/operations.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/secure-compose-wiring.md",
+      "dod": "Disposable Compose smoke/integration checks prove direct same-origin routing, private stores, no-store/no-referrer on all outcomes, startup fail-closed and inspected Redis persistence/noeviction configuration."
+    },
+    {
+      "id": "T18",
+      "title": "Verify canary confidentiality and fault-recovery boundaries",
+      "layer": "tests",
+      "deps": [
+        "T17"
+      ],
+      "acs": [
+        "AC-07",
+        "AC-09",
+        "AC-10",
+        "AC-11",
+        "AC-11b"
+      ],
+      "files_hint": [
+        "backend/tests/security/",
+        "backend/tests/integration/faults/",
+        "scripts/verify_retention/",
+        "docs/features/short-live-path/_audit/runtime-security.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/confidentiality-recovery-audit.md",
+      "dod": "Canary audit has zero payload/code/full-link log/backup hits; fault suites prove no late releases, <=60s deletion while cleanup executes and cleanup-before-serving, or explicitly block launch with evidence."
+    },
+    {
+      "id": "T19",
+      "title": "Verify all screens, exact copies and browser lifecycle safety",
+      "layer": "tests",
+      "deps": [
+        "T17"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-02",
+        "AC-03",
+        "AC-04",
+        "AC-05",
+        "AC-06",
+        "AC-07",
+        "AC-08",
+        "AC-09",
+        "AC-10",
+        "AC-11b",
+        "AC-12"
+      ],
+      "files_hint": [
+        "frontend/tests/e2e/",
+        "frontend/tests/accessibility/",
+        "docs/features/short-live-path/_audit/browser-verification.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/browser-lifecycle-e2e.md",
+      "dod": "AC-citing E2E/accessibility tests pass on the approved narrow/desktop browser matrix with zero app console errors, no automatic disclosure and no stale/late plaintext after lifecycle transitions."
+    },
+    {
+      "id": "T20",
+      "title": "Measure workload budgets and install aggregate synthetic checks",
+      "layer": "tests",
+      "deps": [
+        "T18",
+        "T19"
+      ],
+      "acs": [
+        "AC-01",
+        "AC-04",
+        "AC-07",
+        "AC-11"
+      ],
+      "files_hint": [
+        "scripts/load/",
+        "docker/monitoring/",
+        "docs/operations.md",
+        "docs/features/short-live-path/_audit/performance.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/performance-observability.md",
+      "dod": "Reproducible load report records achieved eligible throughput/p95, error/limit mix and deletion latency; synthetic/alert smoke tests pass without sensitive labels, and monthly availability remains explicitly unmeasured until a full calendar window."
+    }
+  ]
+}

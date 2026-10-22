@@ -1,0 +1,767 @@
+openapi: 3.1.0
+info:
+  title: short-live-path API
+  version: 0.1.0
+  description: 'Anonymous, text-only credential sharing through temporary Share links, with repeated explicit
+    reading before service-established expiration and an optional separate Reading code. No accounts,
+    history, recovery, early removal, files or external credential revocation. Server-readable ephemeral
+    Secrets are accepted; minimal lifecycle metadata remains durable. DRAFT: finite request/code resource
+    limits, timestamp publication, clocks, admission/recovery and proxy continuity remain blocked by data-model
+    DM-OQ-01 through DM-OQ-05; this is not an executable or finalized security contract. Sources: data-model.md;
+    sad.md S1-S7; spec.md US-01-US-05 and AC-01-AC-12 (including AC-11b).'
+  x-status: Draft
+servers:
+- url: /
+  description: Same-origin API through the HTTPS reverse proxy; no production host invented.
+security: []
+tags:
+- name: Secrets
+  description: Public capability-based sharing, no account or Bearer/JWT authentication.
+x-source-documents:
+- ../data-model.md
+- ../sad.md
+- ../spec.md
+- ../CONTEXT.md
+x-project-decisions:
+  error-envelope: Product Owner retained {error:{code,message,details}} during api stage.
+  authentication: 'ADR-0003/0005 and SAD §8: public capability token plus optional code; no BearerAuth.'
+  idempotency: 'S2/DM lifecycle semantics: no automatic retry, deduplication or HTTP Idempotency-Key.
+    S7 internal run identity does not add HTTP idempotency.'
+x-unresolved:
+- DM-OQ-01
+- DM-OQ-02
+- DM-OQ-03
+- DM-OQ-04
+- DM-OQ-05
+paths:
+  /api/v1/secrets:
+    post:
+      operationId: createSecret
+      tags:
+      - Secrets
+      security: []
+      summary: Create a temporary Share link anonymously
+      description: 'Explicit creation only. Confirm 201 only after metadata, expiring payload and quota
+        accounting are confirmed and readiness/deadline remain safe (S1/S2). No automatic retries, deduplication,
+        history or Idempotency-Key guarantee. A manual retry is a new attempt with a fresh token/UUID
+        and its own quota gates; possible earlier records retain original expiry. No code-generation endpoint:
+        generation is browser-local (twenty unbiased CSPRNG Latin letters/digits). Successful-creation
+        timestamp publication remains DM-OQ-02.'
+      x-user-stories:
+      - US-01
+      - US-02
+      - US-03
+      x-acceptance-criteria:
+      - AC-01
+      - AC-02
+      - AC-03
+      - AC-04
+      - AC-05
+      - AC-06
+      - AC-11
+      x-sequences:
+      - S1
+      - S2
+      - S7
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSecretRequest'
+            examples:
+              unprotected:
+                value: &id003
+                  address: server.example.test
+                  login: test-user
+                  credential: "TEST KEY\n  synthetic line\n"
+              withCode:
+                value:
+                  address: server.example.test
+                  login: test-user
+                  credential: "TEST KEY\n  synthetic line\n"
+                  lifetime_minutes: 60
+                  reading_code: Test code 123
+      responses:
+        '201':
+          description: Confirmed creation only; code and payload are not echoed.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSecretResponse'
+              examples:
+                created:
+                  value:
+                    data:
+                      share_url: https://example.test/s/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                      expires_at: '2026-01-01T13:00:00.000Z'
+                    meta:
+                      service_time: '2026-01-01T12:00:00.000Z'
+        '422':
+          description: Malformed JSON/schema, missing or whitespace-only credential, aggregate text over
+            65536 UTF-8 bytes, invalid integer lifetime or enabled code shorter than six code points.
+            No link.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  value:
+                    error:
+                      code: short_live_path.invalid_request
+                      message: Request shape, exact-text or lifetime/code constraints are invalid.
+                      details: []
+          x-error-codes:
+          - short_live_path.invalid_request
+        '429':
+          description: 25 successes per rolling 60 seconds/address, or reserved in-flight slots occupy
+            allowance. Preserve current form input; wait and retry only deliberately.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                creation_limited:
+                  value:
+                    error:
+                      code: short_live_path.creation_limited
+                      message: Creation quota or in-flight address slots are occupied. Wait before trying
+                        manually.
+                      details: []
+          x-error-codes:
+          - short_live_path.creation_limited
+        '503': &id001
+          description: 'Temporary no-content refusal: unsafe readiness/clock, failed or uncertain store/accounting,
+            corrupt metadata/payload/verifier, or bounded work exhaustion. Never claim unknown/expired/incorrect
+            code from a timeout. Creation may have occurred: preserve input, never automatically retry
+            or return a link.'
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                service_unavailable:
+                  value:
+                    error:
+                      code: short_live_path.service_unavailable
+                      message: Service cannot safely complete the operation. No outcome is confirmed.
+                      details: []
+                capacity_unavailable:
+                  value:
+                    error:
+                      code: short_live_path.capacity_unavailable
+                      message: Temporary storage, limiter or bounded work capacity is unavailable.
+                      details: []
+          x-error-codes:
+          - short_live_path.service_unavailable
+          - short_live_path.capacity_unavailable
+  /api/v1/secrets/{token}/status:
+    parameters:
+    - &id002
+      name: token
+      in: path
+      required: true
+      description: Share-link capability. Exactly 43 canonical unpadded base64url characters encoding
+        32 bytes. Decode and re-encode to enforce canonical padding bits before lookup. Never log raw
+        URL/path/token, bind it to a person, or accept an internal lifecycle UUID. Malformed tokens are
+        safe unknown states on neutral status, and link_unavailable on disclosure; stop before digest/store
+        lookup.
+      schema:
+        type: string
+        minLength: 43
+        maxLength: 43
+        pattern: ^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$
+        x-origin: data-model.md §Token and digest representation
+        x-origin-confidence: high
+      example: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    get:
+      operationId: getSecretStatus
+      tags:
+      - Secrets
+      security: []
+      summary: Inspect a neutral gate without disclosing or consuming a Secret
+      description: Safe repeat visits and resume checks (S3/S6). No request body or Reading code; example
+        request GET /api/v1/secrets/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/status. Validate token
+        before lookup. Malformed/unknown returns state unknown without fragments. Known expiration is
+        recognized from retained metadata without reading payloads, while global readiness remains mandatory.
+        Recheck deadline before classifying missing payload or releasing gate. Never verify codes, modify
+        deadlines, promise later readability or embed Secret in neutral HTML/preview.
+      x-user-stories:
+      - US-02
+      - US-04
+      - US-05
+      x-acceptance-criteria:
+      - AC-04
+      - AC-08
+      - AC-09
+      - AC-10
+      - AC-11
+      - AC-11b
+      - AC-12
+      x-sequences:
+      - S3
+      - S6
+      - S7
+      responses:
+        '200':
+          description: Neutral gate or explicit unavailable lifecycle state; never Secret fields.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NeutralGateResponse'
+              examples:
+                available:
+                  value:
+                    data:
+                      state: available
+                      reading_code_required: true
+                      expires_at: '2026-01-01T13:00:00.000Z'
+                    meta:
+                      service_time: '2026-01-01T12:00:00.000Z'
+                withoutCode:
+                  value:
+                    data:
+                      state: available
+                      reading_code_required: false
+                      expires_at: '2026-01-01T13:00:00.000Z'
+                    meta:
+                      service_time: '2026-01-01T12:00:00.000Z'
+                expired:
+                  value:
+                    data:
+                      state: expired
+                      expires_at: '2026-01-01T12:00:00.000Z'
+                    meta:
+                      service_time: '2026-01-01T13:00:00.000Z'
+                unknown:
+                  value:
+                    data:
+                      state: unknown
+                    meta:
+                      service_time: '2026-01-01T12:00:00.000Z'
+                earlyLoss:
+                  value:
+                    data:
+                      state: early_unavailable
+                      expires_at: '2026-01-01T13:00:00.000Z'
+                    meta:
+                      service_time: '2026-01-01T12:00:00.000Z'
+        '503': *id001
+  /api/v1/secrets/{token}/disclosures:
+    parameters:
+    - *id002
+    post:
+      operationId: discloseSecret
+      tags:
+      - Secrets
+      security: []
+      summary: Explicitly show exact Secret text before expiration
+      description: Only explicit Show triggers this request. No session, identity, consumption or view
+        count; repeat and concurrent reading is permitted. Revalidate stored shape and authoritative lifecycle,
+        reserve bounded pair/global hash-work admission before verification, and recheck payload/readiness/time
+        after asynchronous work immediately before bounded nonstreaming release. Missing code is not a
+        failed hash attempt. Wrong code returns only after failure accounting is confirmed; success releases
+        only its slot, not previous failures. Check conservative monotonic deadline before display/copy;
+        discard late or superseded responses, hide offline at expiry, conceal on background and require
+        neutral recheck plus fresh Show on return. No automatic retries (they could spend verification
+        allowance). Never claim remote erasure or external credential revocation.
+      x-user-stories:
+      - US-03
+      - US-04
+      - US-05
+      x-acceptance-criteria:
+      - AC-03
+      - AC-04
+      - AC-06
+      - AC-07
+      - AC-08
+      - AC-09
+      - AC-10
+      - AC-11
+      - AC-11b
+      - AC-12
+      x-sequences:
+      - S4
+      - S5
+      - S6
+      - S7
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscloseSecretRequest'
+            examples:
+              withoutCode:
+                value: {}
+              withCode:
+                value:
+                  reading_code: Test code 123
+      responses:
+        '200':
+          description: Eligible exact text; original expiration is unchanged.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscloseSecretResponse'
+              examples:
+                disclosed:
+                  value:
+                    data:
+                      secret: *id003
+                      expires_at: '2026-01-01T13:00:00.000Z'
+                    meta:
+                      service_time: '2026-01-01T12:00:00.000Z'
+        '403':
+          description: Missing required code, or incorrect code with confirmed failure accounting. No
+            fragments or permanent consumption.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                code_required:
+                  value:
+                    error:
+                      code: short_live_path.code_required
+                      message: Enter the separate Reading code.
+                      details: []
+                code_incorrect:
+                  value:
+                    error:
+                      code: short_live_path.code_incorrect
+                      message: Reading code is incorrect. The link has not been consumed.
+                      details: []
+          x-error-codes:
+          - short_live_path.code_required
+          - short_live_path.code_incorrect
+        '409':
+          description: Malformed/unknown token or known unexpired missing payload. No recovery; request
+            a new link. Frontend uses neutral status to distinguish unknown from early loss; never auto-disclose.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                link_unavailable:
+                  value:
+                    error:
+                      code: short_live_path.link_unavailable
+                      message: Secret is unavailable. Request a new Share link from the Sender; recovery
+                        is not available.
+                      details: []
+          x-error-codes:
+          - short_live_path.link_unavailable
+        '410':
+          description: Known expiration at any check, including final pre-release check after correct
+            verification. Original web URL still renders explicit expiration, not a missing page.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                link_expired:
+                  value:
+                    error:
+                      code: short_live_path.link_expired
+                      message: Share link has expired. External credentials and saved copies are not revoked.
+                      details: []
+          x-error-codes:
+          - short_live_path.link_expired
+        '422':
+          description: Malformed JSON, unknown fields, null/non-string code or invalid request shape.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_request:
+                  value:
+                    error:
+                      code: short_live_path.invalid_request
+                      message: Request shape, exact-text or lifetime/code constraints are invalid.
+                      details: []
+          x-error-codes:
+          - short_live_path.invalid_request
+        '429':
+          description: Five failures per rolling 60 seconds/link/address, or reservations occupy remaining
+            slots. No hash, new failure timestamp, window extension, link-wide lockout or prior-failure
+            reset.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                verification_limited:
+                  value:
+                    error:
+                      code: short_live_path.verification_limited
+                      message: Verification slots for this link and address are temporarily occupied.
+                        Wait.
+                      details: []
+          x-error-codes:
+          - short_live_path.verification_limited
+        '503': *id001
+components:
+  headers:
+    Cache-Control:
+      description: Required on every response, including refusals.
+      schema:
+        type: string
+        const: no-store
+      example: no-store
+    Referrer-Policy:
+      description: Never forward credential-bearing URLs as referrers.
+      schema:
+        type: string
+        const: no-referrer
+      example: no-referrer
+  schemas:
+    Secret:
+      type: object
+      additionalProperties: false
+      required:
+      - address
+      - login
+      - credential
+      properties:
+        address:
+          type: string
+          description: Exact UTF-8 text; no trimming, normalization or newline conversion. Never interpret
+            as HTML or automatically fetch/open an address.
+          x-origin: data-model.md §ephemeral_secret.address; spec AC-02/AC-03
+          x-origin-confidence: high
+        login:
+          type: string
+          description: Exact UTF-8 text; no trimming, normalization or newline conversion. Never interpret
+            as HTML or automatically fetch/open an address.
+          x-origin: data-model.md §ephemeral_secret.login; spec AC-02/AC-03
+          x-origin-confidence: high
+        credential: &id004
+          type: string
+          description: Exact UTF-8 text; no trimming, normalization or newline conversion. Never interpret
+            as HTML or automatically fetch/open an address.
+          x-origin: data-model.md §ephemeral_secret.credential; spec AC-02/AC-03
+          x-origin-confidence: high
+      description: All three response fields are present; absent optional inputs become empty strings.
+        credential is required and not whitespace-only. Sum of UTF-8 bytes of address, login and credential
+        <= 65536. JSON Schema string length is NOT this aggregate byte limit. Revalidate stored records
+        before release.
+      x-max-aggregate-utf8-bytes: 65536
+      x-non-whitespace-fields:
+      - credential
+    ReadingCode:
+      type: string
+      description: Exact code, including Unicode, case and spaces. Never trim or normalize. Plaintext
+        travels only in HTTPS request bodies and is never stored or echoed. The create-only minimum is
+        six Unicode code points; disclosure accepts shorter guesses for normal verification accounting.
+        Finite UTF-8/code/request bounds are unresolved under DM-OQ-01; omission of maxLength is NOT unlimited
+        admission.
+      x-unresolved: DM-OQ-01
+      x-origin: spec AC-06/AC-07; data-model.md §ephemeral_secret.code_verifier input
+      x-origin-confidence: medium
+    CreateSecretRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - credential
+      properties:
+        address:
+          type: string
+          description: Exact UTF-8 text; no trimming, normalization or newline conversion. Never interpret
+            as HTML or automatically fetch/open an address.
+          x-origin: data-model.md §ephemeral_secret.address; spec AC-02/AC-03
+          x-origin-confidence: high
+          default: ''
+        login:
+          type: string
+          description: Exact UTF-8 text; no trimming, normalization or newline conversion. Never interpret
+            as HTML or automatically fetch/open an address.
+          x-origin: data-model.md §ephemeral_secret.login; spec AC-02/AC-03
+          x-origin-confidence: high
+          default: ''
+        credential: *id004
+        lifetime_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          default: 60
+          x-origin: data-model.md §link_lifecycles.expires_at - created_at; spec AC-04/AC-05
+          x-origin-confidence: high
+        reading_code:
+          allOf:
+          - $ref: '#/components/schemas/ReadingCode'
+          minLength: 6
+          description: Omit to disable code protection; null and an empty string are invalid when provided.
+            At least six Unicode code points; no composition/complexity requirement.
+          x-origin: spec AC-06; data-model.md §ephemeral_secret.code_verifier input
+          x-origin-confidence: medium
+      description: Same exact-text, required non-whitespace credential and aggregate 65536 UTF-8 byte
+        constraints as Secret. Omitted lifetime defaults to 60; never round or clamp. All inputs must
+        be well-formed Unicode scalar text; reject lone surrogates instead of lossy conversion.
+      x-max-aggregate-utf8-bytes: 65536
+      x-non-whitespace-fields:
+      - credential
+    DiscloseSecretRequest:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        reading_code:
+          $ref: '#/components/schemas/ReadingCode'
+      description: Explicit Show only. Send {} for an unprotected link or when no code was entered; a
+        protected link returns code_required. Supplying a code never enables protection on an unprotected
+        link. A successful attempt grants only this response, not a session or future automatic disclosure.
+    ServiceMeta:
+      type: object
+      additionalProperties: false
+      required:
+      - service_time
+      properties:
+        service_time:
+          type: string
+          format: date-time
+          description: Authoritative service UTC instant sampled for this response, millisecond precision.
+            Conservative monotonic client deadline must account for transit; do not use the device wall
+            clock or assume the full expires_at minus service_time remains on arrival. Algorithm blocked
+            by DM-OQ-03.
+          x-origin: sad.md S1/S3/S4/S6; spec AC-04/AC-10 service timing
+          x-origin-confidence: medium
+    ShareLink:
+      type: object
+      additionalProperties: false
+      required:
+      - share_url
+      - expires_at
+      properties:
+        share_url:
+          type: string
+          format: uri
+          description: 'Absolute HTTPS URL on the configured public web origin: /s/{token}. token is 32
+            CSPRNG bytes in canonical unpadded base64url (43 characters). No code, Secret or UUID in URL.
+            Treat the entire URL as a credential; never log it.'
+          x-origin: data-model.md §Token and digest representation; sad.md S1; spec AC-01/AC-06
+          x-origin-confidence: medium
+        expires_at: &id005
+          type: string
+          format: date-time
+          description: Original authoritative UTC expiration, millisecond precision. Never extended by
+            reads or retries.
+          x-origin: data-model.md §link_lifecycles.expires_at; §ephemeral_secret.expires_at_ms
+          x-origin-confidence: high
+    GateAvailable:
+      type: object
+      additionalProperties: false
+      required:
+      - state
+      - reading_code_required
+      - expires_at
+      properties:
+        state:
+          type: string
+          const: available
+          x-origin: sad.md S3 eligible gate; data-model.md §Lifecycle and failure semantics
+          x-origin-confidence: medium
+        reading_code_required:
+          type: boolean
+          x-origin: data-model.md §ephemeral_secret.code_verifier presence; sad.md S3
+          x-origin-confidence: high
+        expires_at: *id005
+    GateExpired:
+      type: object
+      additionalProperties: false
+      required:
+      - state
+      - expires_at
+      properties:
+        state:
+          type: string
+          const: expired
+          x-origin: data-model.md §link_lifecycles.expires_at; sad.md S3
+          x-origin-confidence: medium
+        expires_at: *id005
+    GateEarlyUnavailable:
+      type: object
+      additionalProperties: false
+      required:
+      - state
+      - expires_at
+      properties:
+        state:
+          type: string
+          const: early_unavailable
+          x-origin: data-model.md §Lifecycle and failure semantics missing unexpired payload; sad.md S3
+          x-origin-confidence: medium
+        expires_at: *id005
+    GateUnknown:
+      type: object
+      additionalProperties: false
+      required:
+      - state
+      properties:
+        state:
+          type: string
+          const: unknown
+          x-origin: data-model.md §Token and digest representation and unknown lookup; sad.md S3
+          x-origin-confidence: medium
+    NeutralGate:
+      oneOf:
+      - $ref: '#/components/schemas/GateAvailable'
+      - $ref: '#/components/schemas/GateExpired'
+      - $ref: '#/components/schemas/GateEarlyUnavailable'
+      - $ref: '#/components/schemas/GateUnknown'
+      discriminator:
+        propertyName: state
+        mapping:
+          available: '#/components/schemas/GateAvailable'
+          expired: '#/components/schemas/GateExpired'
+          early_unavailable: '#/components/schemas/GateEarlyUnavailable'
+          unknown: '#/components/schemas/GateUnknown'
+      description: No Secret, verifier, internal UUID or digest. Terminal states remain HTTP 200 for neutral
+        status; the original web URL renders an explicit state, not a missing page. Invalid/corrupt records
+        and dependency uncertainty fail closed with 503, not guessed early loss or wrong code.
+    Disclosure:
+      type: object
+      additionalProperties: false
+      required:
+      - secret
+      - expires_at
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+        expires_at: *id005
+    CreateSecretResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ShareLink'
+        meta:
+          $ref: '#/components/schemas/ServiceMeta'
+    NeutralGateResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/NeutralGate'
+        meta:
+          $ref: '#/components/schemas/ServiceMeta'
+    DiscloseSecretResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/Disclosure'
+        meta:
+          $ref: '#/components/schemas/ServiceMeta'
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - details
+      properties:
+        code:
+          type: string
+          pattern: ^[a-z_]+\.[a-z_]+$
+          enum:
+          - short_live_path.invalid_request
+          - short_live_path.creation_limited
+          - short_live_path.capacity_unavailable
+          - short_live_path.service_unavailable
+          - short_live_path.code_required
+          - short_live_path.code_incorrect
+          - short_live_path.verification_limited
+          - short_live_path.link_unavailable
+          - short_live_path.link_expired
+          x-origin: API wire projection of sad.md S1-S4/S7 refusal branches
+          x-origin-confidence: medium
+        message:
+          type: string
+          x-origin: spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches
+          x-origin-confidence: medium
+        details:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+          maxItems: 0
+          description: Always [] in v1. No submitted values, tokens, codes, fragments or internal diagnostics.
+          x-origin: backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope
+          x-origin-confidence: medium
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - error
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+      description: Project envelope explicitly retained by Product Owner at the api stage, overriding
+        the flat generic skill template. No success data/meta or sensitive details on any error.
