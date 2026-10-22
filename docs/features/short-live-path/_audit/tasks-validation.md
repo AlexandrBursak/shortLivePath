@@ -27,6 +27,15 @@ Mermaid command above needs Node/npm and browser support. The stdlib validator h
 
 Resolve DM-OQ-01…05 with the recorded reviews described in T1/T2 and refresh this breakdown; do not dispatch implementation against current Draft snapshots. The browser/version/network/hardware measurement profile is still required before plan-tests (spec §8 / SAD §11). Establish the canon in T4 before feature UI. Standard-route forward handoff remains plan-tests, with an optional direct implementation skip only AFTER the decision/profile prerequisites and refreshed task tests are accepted. The user has not authorized tracker export, commit, push or deployment; none was performed.
 
+## Independent review follow-up
+
+The read-only review identified two planning gaps; both are addressed:
+
+- T7 now carries the defined admission key shapes, exact registry/capacity-reservation accounting, bounded retention and prohibition on arbitrary whole-key TTL. DM-OQ runtime parameters remain explicitly unresolved, not guessed.
+- T16 explicitly owns final SCR-03/04/05 composition at frontend/src/app/s/[token]/page.tsx and frontend/tests/integration/reading_route.spec.ts. Markdown and tasks.json share those hints and the route integration DoD; T15/T16 declare the overlapping route lane. T15 must remain green through typed callbacks tested with a parent harness, without imports or stubs of future T16 widgets; T16 replaces the neutral/concealed integration boundary with completed states.
+
+Task count, dependency DAG and estimates remain unchanged. Structural validation was rerun after these edits; no runtime implementation or test-result claim is added.
+
 ## Artifact inventory
 
 - tasks.json: machine DAG and task-body pointers.
