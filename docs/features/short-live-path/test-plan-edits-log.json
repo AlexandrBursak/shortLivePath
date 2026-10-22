@@ -1,0 +1,9 @@
+[
+  {
+    "decision_id": "DEC-profile-local-execution",
+    "action": "edit",
+    "before": "Offered representative browser/mobile and shaped-network profile: RTT 100 ms, 10 Mbit/s each direction, no packet loss.",
+    "after": "Laptop-local testing with isolated real stores and synthetic values; record exact local versions/resources/network. Actual-phone and production-host verification remain mandatory before launch. No shaped-network profile is assumed approved.",
+    "user_reason": "хмм, я думаю що тестити ми це будемо в мене на ноуті локально, скажи що тобі для цього потрбіно?"
+  }
+]
