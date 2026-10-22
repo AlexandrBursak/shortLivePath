@@ -1,11 +1,11 @@
 # Tracker — short-live-path
 
-> States: todo · in_progress · blocked · review · done. No task is implemented or approved as done.
-> T1/T2 are decision work only. ADR-0006/0007 initial policy is Accepted by Product Owner; T1 source synchronization and T2 protocols remain open. Implementation tasks stay blocked on those prerequisites; T21 benchmarks after T3, not before scaffolding. A missing source approval cannot be bypassed by editing tracker status.
+> States: todo · in_progress · blocked · review · done. T1 is done for documentation/policy synchronization only; no application task is implemented.
+> T1/T2 are decision work only. ADR-0006/0007 initial policy is Accepted by Product Owner; T1 source synchronization is complete; T2 protocols remain open and still block implementation; T21 benchmarks after T3, not before scaffolding. A missing source approval cannot be bypassed by editing tracker status.
 
 | # | Task | Layer | Owner | Estimate | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| T1 | [Resolve verifier budgets and trusted-address continuity](resolve-verifier-address-policy.md) | docs | Product Owner + coding agent | 8h | — | todo |
+| T1 | [Resolve verifier budgets and trusted-address continuity](resolve-verifier-address-policy.md) | docs | Product Owner + coding agent | 8h | — | done |
 | T2 | [Resolve publication, clock and reservation state machines](resolve-time-admission-protocol.md) | docs | Product Owner + coding agent | 8h | — | todo |
 | T3 | [Bootstrap the backend with executable quality gates](bootstrap-backend.md) | wiring | <TBD lead> | 6h | T1, T2 | blocked |
 | T4 | [Bootstrap the neutral frontend and register shared primitives](bootstrap-frontend-canon.md) | ui | <TBD lead> | 8h | T1, T2 | blocked |

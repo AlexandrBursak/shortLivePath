@@ -20,7 +20,7 @@ status: "blocked"
 
 - Lane: T3 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: this package is provisional. T1/T2 must close DM-OQ-01…05 with recorded review; then re-run tasks to refresh snapshots before T3…T20. Do not execute implementation with Draft parameters.
+Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
 
 ## Why (user story)
 

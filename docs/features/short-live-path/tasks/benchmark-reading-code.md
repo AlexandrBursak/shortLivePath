@@ -19,7 +19,7 @@ status: "blocked"
 - Blocked by: T3 — Bootstrap the backend with executable quality gates. Blocks: T20 — Measure workload budgets and install aggregate synthetic checks. Wave: 3 (dependency depth, not elapsed days).
 - Lane: shares backend package/Compose files with T3 and the ADR-0006 library setup; serialize changes. T21 does not depend on feature endpoints or T6, and does not block T3/T4. Final end-to-end performance remains T20.
 
-Product Owner accepted ADR-0006/0007 as starting values on 2026-10-22 and explicitly moved benchmarking after scaffolding. T1 contract synchronization and T2 protocols still gate T3; this task must not become an indirect pre-scaffold prerequisite.
+Product Owner accepted ADR-0006/0007 as starting values on 2026-10-22 and explicitly moved benchmarking after scaffolding. T1 source synchronization is complete; T2 protocols still gate T3; this task must not become an indirect pre-scaffold prerequisite.
 
 ## Why (user story)
 
@@ -67,7 +67,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Sender enables a Reading code
 > **When** the Sender chooses a code or requests random generation
-> **Then** creation requires at least six Unicode code points of any composition, longer codes are allowed, random generation produces twenty characters drawn from Latin letters and digits, and the Reading code is not included in the Share link. There is no character-class or complexity requirement; an informational weak-code warning does not block creation. A chosen code is compared exactly, including case and spaces, without trimming or normalization.
+> **Then** creation requires at least six Unicode code points of any composition, longer codes are allowed up to 1024 UTF-8 bytes, random generation produces twenty characters drawn from Latin letters and digits, and the Reading code is not included in the Share link. There is no character-class or complexity requirement; an informational weak-code warning does not block creation. A chosen code is compared exactly, including case and spaces, without trimming or normalization. A code over this byte limit is rejected with an explanation, never truncated, and does not create a link.
 >
 > — `spec.md §5, AC-06, verbatim` · full text: [spec.md](../spec.md)
 
@@ -76,7 +76,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Secret requires a Reading code
 > **When** a Recipient attempts reading without the correct code
-> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; atomic concurrency controls and the bounded hash implementation remain design obligations.
+> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; atomic concurrency controls and the bounded hash implementation remain design obligations. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 

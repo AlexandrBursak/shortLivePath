@@ -5,11 +5,11 @@ layer: "docs"
 deps: []
 blocks: ["T3", "T4"]
 acs: ["AC-06", "AC-07"]
-files_hint: ["docs/features/short-live-path/adr/", "docs/features/short-live-path/data-model.md", "docs/features/short-live-path/contracts/openapi.yaml"]
+files_hint: ["docs/features/short-live-path/adr/", "docs/features/short-live-path/data-model.md", "docs/features/short-live-path/contracts/openapi.yaml", "docs/features/short-live-path/spec.md", "docs/features/short-live-path/_audit/generate-api.py", "docs/features/short-live-path/_audit/verify-api.py"]
 owner: "Product Owner + coding agent"
 estimate: "8h"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T1 — Resolve verifier budgets and trusted-address continuity
@@ -20,7 +20,7 @@ status: "todo"
 
 - Lane: T2 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: this package is provisional. T1/T2 must close DM-OQ-01…05 with recorded review; then re-run tasks to refresh snapshots before T3…T20. Do not execute implementation with Draft parameters.
+Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
 
 ## Why (user story)
 
@@ -31,7 +31,7 @@ Planning gate: this package is provisional. T1/T2 must close DM-OQ-01…05 with 
 > — `spec.md §4, US-03, verbatim` · full text: [spec.md](../spec.md)
 
 
-This task contributes: Resolve verifier budgets and trusted-address continuity. ADR-0006/0007 are Accepted starting values by explicit Product Owner approval on 2026-10-22; T1 remains todo for source-contract synchronization. Benchmark calibration is T21 after T3, not a T1 completion prerequisite. Actual topology/key configuration and fault verification remain implementation/deployment work.
+This task contributes: Resolve verifier budgets and trusted-address continuity. ADR-0006/0007 are Accepted starting values by explicit Product Owner approval on 2026-10-22; T1 documentation synchronization is complete; see _audit/api-validation.md for executed structural evidence. No independent security review is claimed. Benchmark calibration is T21 after T3, not a T1 completion prerequisite. Actual topology/key configuration and fault verification remain implementation/deployment work.
 
 ## Inlined context
 
@@ -60,12 +60,12 @@ This task contributes: Resolve verifier budgets and trusted-address continuity. 
 > — `spec.md §6, NFR-04, abridged` · full text: [spec.md](../spec.md)
 
 
-> | DM-OQ-01 | Accepted initial values in ADR-0006: Argon2id v19, m=65536 KiB/t=3/p=4, salt 16 bytes/output 32 bytes, 2 concurrent calls/no queue, code <=1024 UTF-8 bytes/body <=524288 wire bytes. T1 still synchronizes spec/API; T21 calibrates after T3. | Backend/security responsibility; source sync before feature implementation, benchmark after scaffolding/before T20. |
+> | DM-OQ-01 | Accepted initial values in ADR-0006: Argon2id v19, m=65536 KiB/t=3/p=4, salt 16 bytes/output 32 bytes, 2 concurrent calls/no queue, code <=1024 UTF-8 bytes/body <=524288 wire bytes. T1 spec/API synchronization is complete; T21 calibrates after T3. | Backend/security responsibility; source sync complete; benchmark after scaffolding/before T20. |
 >
 > — `data-model.md §Open technical decisions, DM-OQ-01, abridged` · full text: [data-model.md](../data-model.md)
 
 
-> | DM-OQ-05 | Accepted policy in ADR-0007: pinned immediate proxy, canonical full address, versioned HMAC-SHA-256/32-byte deployment key, stable restart identity and fenced >=60s quiet interval on continuity loss/rotation. Actual allowlist/key provisioning and T2 fencing/time integration remain pending. | Backend/security responsibility; T1 source sync, T2 executable protocol, deployment verification before launch. |
+> | DM-OQ-05 | Accepted policy in ADR-0007: pinned immediate proxy, canonical full address, versioned HMAC-SHA-256/32-byte deployment key, stable restart identity and fenced >=60s quiet interval on continuity loss/rotation. Actual allowlist/key provisioning and T2 fencing/time integration remain pending. | Backend/security responsibility; T1 source sync complete; T2 executable protocol, deployment verification before launch. |
 >
 > — `data-model.md §Open technical decisions, DM-OQ-05, abridged` · full text: [data-model.md](../data-model.md)
 
@@ -88,7 +88,7 @@ No DB changes.
 > — `contracts/openapi.yaml §paths / components, discloseSecret, abridged` · full text: [contracts/openapi.yaml](../contracts/openapi.yaml)
 
 
-> All operations use security: [] (no account/Bearer auth). Every response requires Cache-Control: no-store and Referrer-Policy: no-referrer. Success uses {data,meta}; errors use {error:{code,message,details}}, details always []. Finite code/body bounds remain DM-OQ-01 until reviewed.
+> All operations use security: [] (no account/Bearer auth). Every response requires Cache-Control: no-store and Referrer-Policy: no-referrer. Success uses {data,meta}; errors use {error:{code,message,details}}, details always []. Accepted ADR-0006: code <=1024 UTF-8 bytes, body <=524288 wire bytes, identity-only encoding, two concurrent hash calls/no queue. Both POST operations have safe 413 short_live_path.request_too_large and 415 short_live_path.unsupported_media_type outcomes before expensive work; code overflow is 422 invalid_request with no failed-code increment. ADR-0007 unsafe trusted-address/continuity context is 503 service_unavailable, not wrong code.
 >
 > — `contracts/openapi.yaml §components / security, shared envelope and headers, abridged` · full text: [contracts/openapi.yaml](../contracts/openapi.yaml)
 
@@ -101,7 +101,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Sender enables a Reading code
 > **When** the Sender chooses a code or requests random generation
-> **Then** creation requires at least six Unicode code points of any composition, longer codes are allowed, random generation produces twenty characters drawn from Latin letters and digits, and the Reading code is not included in the Share link. There is no character-class or complexity requirement; an informational weak-code warning does not block creation. A chosen code is compared exactly, including case and spaces, without trimming or normalization.
+> **Then** creation requires at least six Unicode code points of any composition, longer codes are allowed up to 1024 UTF-8 bytes, random generation produces twenty characters drawn from Latin letters and digits, and the Reading code is not included in the Share link. There is no character-class or complexity requirement; an informational weak-code warning does not block creation. A chosen code is compared exactly, including case and spaces, without trimming or normalization. A code over this byte limit is rejected with an explanation, never truncated, and does not create a link.
 >
 > — `spec.md §5, AC-06, verbatim` · full text: [spec.md](../spec.md)
 
@@ -110,36 +110,36 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Secret requires a Reading code
 > **When** a Recipient attempts reading without the correct code
-> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; atomic concurrency controls and the bounded hash implementation remain design obligations.
+> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; atomic concurrency controls and the bounded hash implementation remain design obligations. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 
 
 ## Checklist
 
-- [ ] Resolve DM-OQ-01: record the Accepted ADR-0006 library/cost, finite code/body bytes and global concurrent/no-queue work budget; delegate reproducible calibration to T21 after T3; retain exact six-code-point minimum and shorter disclosure guesses. Work area: `docs/features/short-live-path/adr/` (and matching files_hint targets).
+- [x] Resolve DM-OQ-01: record the Accepted ADR-0006 library/cost, finite code/body bytes and global concurrent/no-queue work budget; delegate reproducible calibration to T21 after T3; retain exact six-code-point minimum and shorter disclosure guesses. Work area: `docs/features/short-live-path/adr/` (and matching files_hint targets).
 
-- [ ] Resolve DM-OQ-05: document trusted proxy topology, canonical address representation, HMAC custody/rotation and fail-closed quota continuity across restart/state loss. Work area: `docs/features/short-live-path/data-model.md` (and matching files_hint targets).
+- [x] Resolve DM-OQ-05: document trusted proxy topology, canonical address representation, HMAC custody/rotation and fail-closed quota continuity across restart/state loss. Work area: `docs/features/short-live-path/data-model.md` (and matching files_hint targets).
 
-- [ ] Record Product Owner acceptance without claiming independent security sign-off; synchronize model/spec and Draft contract. An unresolved choice stays blocked, never gets a guessed default. Work area: `docs/features/short-live-path/contracts/openapi.yaml` (and matching files_hint targets).
+- [x] Record Product Owner acceptance without claiming independent security sign-off; synchronize model/spec and Draft contract. An unresolved choice stays blocked, never gets a guessed default. Work area: `docs/features/short-live-path/contracts/openapi.yaml` (and matching files_hint targets).
 
-- [ ] Write the named tests first (RED), then implement and pass GREEN; for decision tasks use executable evidence/review vectors rather than claiming runtime success from prose.
+- [x] This decision-only task uses executed API/task structural checks and recorded Product Owner acceptance as evidence. No application RED/GREEN cycle or runtime security test is claimed; those belong to implementation/verification tasks.
 
 ## Edge cases
 
 | Case | Behaviour |
 |---|---|
-| Untrusted forwarding header | Ignore it; canonicalize only the trusted connection/proxy-derived address. |
+| Untrusted forwarding header | The public proxy overwrites it; API accepts only the pinned immediate proxy with exactly one valid literal address, otherwise fails closed before new limiter state. |
 | Unapproved cost, limits or continuity | Keep implementation blocked; request review, not a guessed runtime default. |
 
 Edge-case sources: [spec.md](../spec.md) §5, AC-06, AC-07, abridged; [sad.md](../sad.md) §6, S4, abridged. Decisions T1/T2 also follow [data-model.md](../data-model.md) §Open technical decisions, DM-OQ-01…05, abridged.
 
 ## Definition of Done
 
-- [ ] Record Accepted ADR-0006/0007 starting values and synchronize model/spec/API policy with explicit remaining T2 and deployment obligations; benchmark evidence belongs to post-scaffold T21, not this gate.
+- [x] Record Accepted ADR-0006/0007 starting values and synchronize model/spec/API policy with explicit remaining T2 and deployment obligations; benchmark evidence belongs to post-scaffold T21, not this gate.
 
-- [ ] All inlined hard rules still hold; tests cite their AC IDs.
+- [x] All inlined hard rules still hold; tests cite their AC IDs.
 
-- [ ] Installed application test/lint/typecheck/build gates pass for touched code; decision-only tasks pass artifact validation and recorded review instead.
+- [x] Installed application test/lint/typecheck/build gates pass for touched code; decision-only tasks pass artifact validation and recorded review instead.
 
-- [ ] Stay within one working day; split/replan if the change exceeds roughly 500 LOC. Never close unresolved safety choices as done.
+- [x] Stay within one working day; split/replan if the change exceeds roughly 500 LOC. Never close unresolved safety choices as done.

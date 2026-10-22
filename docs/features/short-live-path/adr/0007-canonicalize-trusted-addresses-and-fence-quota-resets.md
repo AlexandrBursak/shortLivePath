@@ -69,7 +69,7 @@ Implementation/deployment verification obligations (not prerequisites for Accept
 - AC-07/NFR-05 continuity vectors: same-key restart retains failures/successes; reset/lost key/rotation with recent failures stays closed through a safely fenced full window; old delayed hash/Redis completions cannot mutate the new generation; repeated reconnect/clock interruption restarts recovery. Verify exact window boundaries and five-minute retention without evicting active safety records at cap.
 - Demonstrate that rotation with surviving Redis does not delete unexpired payloads, and Redis-loss recovery never restores them. Confirm aggregate metrics and proxy/API logs contain no test addresses, pseudonyms, codes or full links.
 - T2 must provide actual generation storage, stale-owner mutation checks, authoritative/monotonic interval timing and missing-registry detection. Pin these transitions before executable feature tasks and run deterministic fault tests before launch; this ADR alone does not close DM-OQ-03/04 or prove deployment configuration.
-- Product Owner accepted maintenance downtime, full-address IPv6 semantics and key custody as starting choices. T1 still owns source-contract synchronization; actual proxy configuration and security/fault verification remain implementation/deployment obligations. Address policy is accepted, not runtime-verified; no vector above has run.
+- Product Owner accepted maintenance downtime, full-address IPv6 semantics and key custody as starting choices. T1 source-contract synchronization is complete; actual proxy configuration and security/fault verification remain implementation/deployment obligations. Address policy is accepted, not runtime-verified; no vector above has run.
 
 ## Consequences
 

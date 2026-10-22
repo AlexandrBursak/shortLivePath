@@ -38,12 +38,14 @@ schemas['Secret']['description'] = ('All three response fields are present; abse
     'JSON Schema string length is NOT this aggregate byte limit. Revalidate stored records before release.')
 schemas['Secret']['x-max-aggregate-utf8-bytes'] = 65536
 schemas['Secret']['x-non-whitespace-fields'] = ['credential']
-schemas['ReadingCode'] = field('string', 'spec AC-06/AC-07; data-model.md §ephemeral_secret.code_verifier input',
-    'medium', description='Exact code, including Unicode, case and spaces. Never trim or normalize. '
+schemas['ReadingCode'] = field('string', 'spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0006 input budget',
+    'high', maxLength=1024, description='Exact code, including Unicode, case and spaces. Never trim or normalize. '
     'Plaintext travels only in HTTPS request bodies and is never stored or echoed. The create-only minimum '
     'is six Unicode code points; disclosure accepts shorter guesses for normal verification accounting. '
-    'Finite UTF-8/code/request bounds are unresolved under DM-OQ-01; omission of maxLength is NOT unlimited admission.',
-    **{'x-unresolved': 'DM-OQ-01'})
+    'At most 1024 UTF-8 bytes (ADR-0006); maxLength counts code points and is only a necessary bound. '
+    'Enforce x-max-utf8-bytes and scalar-text validity before hashing; never truncate. Codes over this bound '
+    'return 422 invalid_request without a failed verification.',
+    **{'x-max-utf8-bytes': 1024})
 schemas['CreateSecretRequest'] = obj({
     'address': {**schemas['Secret']['properties']['address'], 'default': ''},
     'login': {**schemas['Secret']['properties']['login'], 'default': ''},
@@ -109,6 +111,8 @@ for name, data in [('CreateSecretResponse', 'ShareLink'), ('NeutralGateResponse'
 
 codes = {
     'short_live_path.invalid_request': 'Request shape, exact-text or lifetime/code constraints are invalid.',
+    'short_live_path.request_too_large': 'Request body exceeds the permitted wire-byte limit. No link is confirmed.',
+    'short_live_path.unsupported_media_type': 'Use uncompressed application/json. Request media type or encoding is unsupported.',
     'short_live_path.creation_limited': 'Creation quota or in-flight address slots are occupied. Wait before trying manually.',
     'short_live_path.capacity_unavailable': 'Temporary storage, limiter or bounded work capacity is unavailable.',
     'short_live_path.service_unavailable': 'Service cannot safely complete the operation. No outcome is confirmed.',
@@ -119,7 +123,7 @@ codes = {
     'short_live_path.link_expired': 'Share link has expired. External credentials and saved copies are not revoked.',
 }
 schemas['Error'] = obj({
-    'code': field('string', 'API wire projection of sad.md S1-S4/S7 refusal branches', 'medium',
+    'code': field('string', 'API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches', 'medium',
                   pattern=r'^[a-z_]+\.[a-z_]+$', enum=list(codes)),
     'message': field('string', 'spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches', 'medium'),
     'details': field('array', 'backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope',
@@ -166,7 +170,7 @@ def err(description, *names):
 
 
 common503 = err('Temporary no-content refusal: unsafe readiness/clock, failed or uncertain store/accounting, '
-    'corrupt metadata/payload/verifier, or bounded work exhaustion. Never claim unknown/expired/incorrect code '
+    'corrupt metadata/payload/verifier, invalid trusted-address context, continuity recovery, or bounded work exhaustion. Never claim unknown/expired/incorrect code '
     'from a timeout. Creation may have occurred: preserve input, never automatically retry or return a link.',
     'service_unavailable', 'capacity_unavailable')
 param = {'name': 'token', 'in': 'path', 'required': True,
@@ -196,7 +200,7 @@ paths = {
       '201': response('CreateSecretResponse', 'Confirmed creation only; code and payload are not echoed.',
            {'created': success({'share_url': 'https://example.test/s/' + TOKEN, 'expires_at': X})}),
       '422': err('Malformed JSON/schema, missing or whitespace-only credential, aggregate text over 65536 UTF-8 bytes, '
-                 'invalid integer lifetime or enabled code shorter than six code points. No link.', 'invalid_request'),
+                 'invalid integer lifetime, enabled code shorter than six code points, or code over 1024 UTF-8 bytes. No hash, failed-code increment or confirmed link on invalid input.', 'invalid_request'),
       '429': err('25 successes per rolling 60 seconds/address, or reserved in-flight slots occupy allowance. '
                  'Preserve current form input; wait and retry only deliberately.', 'creation_limited'),
       '503': common503,
@@ -248,13 +252,33 @@ paths = {
                   'Frontend uses neutral status to distinguish unknown from early loss; never auto-disclose.', 'link_unavailable'),
        '410': err('Known expiration at any check, including final pre-release check after correct verification. '
                   'Original web URL still renders explicit expiration, not a missing page.', 'link_expired'),
-       '422': err('Malformed JSON, unknown fields, null/non-string code or invalid request shape.', 'invalid_request'),
+       '422': err('Malformed JSON, unknown fields, null/non-string/non-scalar code, code over 1024 UTF-8 bytes or invalid request shape. No hash or failed-code increment on invalid input.', 'invalid_request'),
        '429': err('Five failures per rolling 60 seconds/link/address, or reservations occupy remaining slots. '
                   'No hash, new failure timestamp, window extension, link-wide lockout or prior-failure reset.', 'verification_limited'),
        '503': common503,
     },
  }},
 }
+
+# Source: Accepted ADR-0006/0007 and SAD §6 T1 transport/admission refinements.
+for path in ('/api/v1/secrets', '/api/v1/secrets/{token}/disclosures'):
+    op = paths[path]['post']
+    op['requestBody'].update({
+        'x-max-wire-bytes': 524288,
+        'x-allowed-content-encodings': ['identity'],
+        'description': 'application/json only, absent or identity Content-Encoding; no compressed body. '
+        'Enforce 524288 wire bytes while receiving, including absent/chunked Content-Length. '
+        'The wire budget includes escaping/packaging and is separate from Secret aggregate UTF-8 bytes. '
+        'Reject unsupported media/encoding with 415 and oversized bodies with 413 before hashing or new admission state; '
+        'safe no-store/no-referrer envelope, no input echo, no incorrect-code failure or confirmed link.',
+    })
+    op['responses']['413'] = err('Body exceeds 524288 wire bytes; safe proxy/API refusal before expensive work.',
+                                 'request_too_large')
+    op['responses']['415'] = err('Unsupported media type or Content-Encoding; require uncompressed application/json.',
+                                 'unsupported_media_type')
+    op['description'] += ' Accepted ADR-0006: 1024 UTF-8 code bytes, two concurrent hash calls across creation/disclosure, '
+    op['description'] += 'zero waiting queue. Invalid input or global capacity refusal starts no hash and adds no code failure. '
+    op['description'] += 'Retain permits until native completion after timeout/disconnect; late results do not authorize release.'
 
 contract = {
  'openapi': '3.1.0',
@@ -263,8 +287,8 @@ contract = {
           'explicit reading before service-established expiration and an optional separate Reading code. '
           'No accounts, history, recovery, early removal, files or external credential revocation. Server-readable '
           'ephemeral Secrets are accepted; minimal lifecycle metadata remains durable. '
-          'DRAFT: finite request/code resource limits, timestamp publication, clocks, admission/recovery and proxy '
-          'continuity remain blocked by data-model DM-OQ-01 through DM-OQ-05; this is not an executable or finalized '
+          'T1 policy is synchronized from Accepted ADR-0006/0007. DRAFT: timestamp publication, clocks and executable '
+          'admission/recovery fencing remain blocked by DM-OQ-02 through DM-OQ-04; this is not an executable or finalized '
           'security contract. Sources: data-model.md; sad.md S1-S7; spec.md US-01-US-05 and AC-01-AC-12 (including AC-11b).',
           'x-status': 'Draft'},
  'servers': [{'url': '/', 'description': 'Same-origin API through the HTTPS reverse proxy; no production host invented.'}],
@@ -273,11 +297,22 @@ contract = {
  'x-source-documents': ['../data-model.md', '../sad.md', '../spec.md', '../CONTEXT.md'],
  'x-project-decisions': {
     'error-envelope': 'Product Owner retained {error:{code,message,details}} during api stage.',
+    'trusted-address': 'ADR-0007: only a pinned immediate proxy supplies one sanitized literal address. '
+        'Canonical full IPv6; IPv4-mapped IPv6 shares IPv4 identity. Stable versioned HMAC-SHA-256 labels '
+        'use a 32-byte deployment key, never logged or client-supplied. Invalid/untrusted context returns '
+        '503 service_unavailable before new limiter state; no public forwarding-header parameter.',
+    'quota-continuity': 'ADR-0007: preserve same-key counters on ordinary API restart. On continuity loss/rotation '
+        'close Secret traffic, fence all old mutations, then require at least 60 continuous seconds after the last '
+        'possible old mutation plus cleanup/reconciliation. Restart the interval on discontinuity; never infer '
+        'fresh quota from missing state. T2 owns executable time/fencing. No addresses/pseudonyms in logs.',
     'authentication': 'ADR-0003/0005 and SAD §8: public capability token plus optional code; no BearerAuth.',
     'idempotency': 'S2/DM lifecycle semantics: no automatic retry, deduplication or HTTP Idempotency-Key. '
                    'S7 internal run identity does not add HTTP idempotency.',
  },
- 'x-unresolved': ['DM-OQ-01', 'DM-OQ-02', 'DM-OQ-03', 'DM-OQ-04', 'DM-OQ-05'],
+ 'x-unresolved': ['DM-OQ-02', 'DM-OQ-03', 'DM-OQ-04'],
+ 'x-verification-obligations': ['T21 post-scaffold calibration', 'T17 actual proxy/key provisioning', 'T18 security/fault verification'],
+ 'x-reading-code-work': {'algorithm': 'argon2id', 'version': 19, 'memory-kib': 65536, 'iterations': 3,
+                         'parallelism': 4, 'salt-bytes': 16, 'output-bytes': 32, 'concurrency': 2, 'queue': 0},
  'paths': paths,
  'components': {'headers': headers, 'schemas': schemas},
 }
@@ -321,11 +356,11 @@ report = '''# API sync report — short-live-path
 
 Size M, route standard (read from .size/.route). HTTP/REST backend-service is declared alongside
 web-frontend in SAD frontmatter. data-model.md, sad.md and spec.md are present. No application,
-manifest, live error registry, existing contract or check target exists in this repo.
+manifest, live error registry or application check target exists in this repo; the existing contract is reconciled in place.
 
 DRAFT — wire projection is source-aligned subject to the explicitly inherited DM-OQ blockers below.
 No implementation, security, performance, retention or runtime correctness is claimed by contract linting.
-Source documents and migrations are unchanged. No commit is made.
+T1 source synchronization applies Accepted ADR-0006/0007 to spec, model, SAD and this contract. Migrations are unchanged. No runtime verification or new commit is claimed by this report.
 
 ## Resolved conventions
 
@@ -341,6 +376,9 @@ Source documents and migrations are unchanged. No commit is made.
   or public maintenance endpoint is justified by these stories. Such surfaces are not invented.
 - No central error registry found: neutral short_live_path.* codes are contract proposals. Reconcile
   with the future backend registry and validators; this is not evidence of existing runtime constants.
+- Accepted ADR-0006/0007 set the initial 1024 UTF-8 code bytes, 524288 wire-body bytes, Argon2id work budget,
+  trusted-address policy and continuity refusal semantics. Two hash calls and no queue are not throughput measurements.
+  T21 calibrates after T3; actual proxy/key controls and fault tests remain T17/T18.
 - Async S7 maintenance is documented in events.md as internal triggers, not an external integration,
   message bus, persistent queue or fourth deployment surface.
 
@@ -370,8 +408,9 @@ report += '''
    aggregate text <=65536 UTF-8 bytes; credential not whitespace-only; create code minimum six Unicode
    code points; exact Unicode/spaces/newlines; millisecond UTC timestamps. Aggregate bytes, canonical
    decoding, stored-record consistency and clocks need service validators, not a misleading maxLength.
-   The finite code/body limit is unresolved, not invented. No per-field byte or arbitrary URL/login
-   format rule restricts valid Secret text. Null is not an alias for omitted optional text/code.
+   Accepted ADR-0006 supplies code <=1024 UTF-8 bytes (maxLength is NOT a byte validator), body <=524288 wire bytes,
+   identity-only encoding and no queued hash work. Body overflow is 413; media/encoding refusal is 415; code overflow is 422.
+   No per-field byte or arbitrary URL/login format rule restricts valid Secret text. Null is not an alias for omitted optional text/code.
 4. ✓ OpenAPI ↔ sequences (supporting): HTTP methods/statuses/field names are derived here; sequences
    intentionally use semantic messages. Mapping below covers service outcomes and distinguishes
    no-response/network loss and browser/internal branches from representable HTTP responses.
@@ -390,8 +429,8 @@ report += '''
 | AC-03 | createSecret 201; discloseSecret 200 Secret fields | S5 exact inert rendering and clipboard, no newline rewriting |
 | AC-04 | createSecret 201/default 60; status/disclosure service_time + expires_at | S6 conservative monotonic timing; minute-level slider |
 | AC-05 | createSecret 422; integer lifetime bounds | Explain bounds without clamping |
-| AC-06 | createSecret 201/422; discloseSecret 200/403 | Local generator; nonblocking weak-code advice; no code in URL |
-| AC-07 | discloseSecret 403/429/503 | Pair reservations and salted verifier; no consuming/rebinding link |
+| AC-06 | createSecret 201/422/413/415; discloseSecret 200/403/422/413/415 | Local generator; nonblocking weak-code advice; no code in URL |
+| AC-07 | discloseSecret 403/422/429/503; transport 413/415 before code work | Pair reservations and salted verifier; no consuming/rebinding link |
 | AC-08 | getSecretStatus 200; discloseSecret 200 | Initial/repeat neutral page; no automatic Show or consumption |
 | AC-09 | getSecretStatus 200 unknown/expired/early_unavailable; discloseSecret 409/410 | Original browser URL shows state, never a missing-page experience |
 | AC-10 | discloseSecret 410/503 final check; status revalidation | S5/S6 late-response discard, offline hide, concealed resume |
@@ -422,7 +461,10 @@ API responses support but do not themselves prove browser-only or infrastructure
 | S3/S4 corrupt/inconsistent payload/verifier | 503 service_unavailable; safe no-content failure, never code-disabled |
 | S3 eligible gate | 200 available + reading_code_required + unchanged expires_at, no Secret |
 | S3 late arrival, repeat visit | UI discards expired gate; starts neutral, never auto-discloses |
-| S4 invalid body/request bounds | 422 invalid_request; concrete resource upper bound awaits DM-OQ-01 |
+| S1/S4 invalid schema/code bytes | 422 invalid_request; maximum code 1024 UTF-8 bytes before hash, no incorrect-code failure |
+| T1 transport refinement: oversized wire body | createSecret/discloseSecret 413 request_too_large; maximum 524288 wire bytes, safe envelope/headers |
+| T1 transport refinement: unsupported media/compression | createSecret/discloseSecret 415 unsupported_media_type; uncompressed application/json only |
+| T1 trusted-address/continuity refinement | all Secret operations 503 service_unavailable before new limiter state when context/readiness is unsafe; no client-settable identity header |
 | S4 malformed/unknown token | 409 link_unavailable; malformed stops before lookup |
 | S4 no required code | authorize only current request; final checks still mandatory |
 | S4 required code absent/incorrect with confirmed accounting | 403 code_required / code_incorrect, no payload |
@@ -439,7 +481,8 @@ API responses support but do not themselves prove browser-only or infrastructure
 | S7 duplicate/current run, health failure, bounded batch/retry/dead-letter/recovery checks | internal events.md, serving gate exposes only 503 until ready |
 | S7 early payload loss/metadata-only restoration | status early_unavailable before expiry, expired after; no payload recovery |
 
-No new missing-AC or missing-sequence branch was found. Mapping of safe invalid-record refusal to
+T1 transport/refusal branches are explicitly sourced from SAD §6 T1 transport and admission refinements;
+no new endpoint or unsupported sequence assumption is introduced. No unresolved missing-AC/branch gap was found. Mapping of safe invalid-record refusal to
 503 is the technical temporary-failure class in data-model.md §Lifecycle and failure semantics;
 it does not label corruption as a proven incorrect code. Status terminal states intentionally use
 200, while explicit disclosure refusals use the error envelope. A 410 API response must not become
@@ -447,15 +490,15 @@ an HTTP 404 web page. Intermediaries must apply the same noncacheable/sanitized 
 
 ## Inherited open decisions — finalization gate
 
-These are existing source obligations, not newly accepted defaults or waivers. No source was edited.
+T1 is synchronized from explicitly Accepted ADR-0006/0007. Remaining T2 decisions below are not waived. No runtime correctness follows from source synchronization.
 
 | ID | Contract impact | Owner / due |
 |---|---|---|
-| DM-OQ-01 | Concrete finite UTF-8/code/body budget, hash suite/cost and global queue/concurrency. Until resolved, lack of maxLength does not authorize unbounded input; proxy limits must not silently shrink valid 65536-byte text after JSON escaping. Decide any body-size status/schema branches together. | Backend/security (data-model/design), before contract finalization and executable tasks |
+| DM-OQ-01 | RESOLVED initial policy: ADR-0006 code/work/body budgets and safe 413/415/422/503 projection synchronized. No runtime limit or performance has been measured. | Calibration T21 after T3; final performance T20 |
 | DM-OQ-02 | Successful-creation anchor and final timestamps across PostgreSQL then Redis. Matching DTO timestamps alone cannot prove exact lifetime from successful creation. | Backend with Product Owner (data-model/design), before contract finalization and executable tasks |
 | DM-OQ-03 | Safe authoritative/monotonic timing, transit-aware client deadline, discontinuity detection, cleanup batches/retry budgets and current-run fencing. | Backend/frontend (design/sequences), before contract finalization and executable tasks |
 | DM-OQ-04 | Admission leases/fencing, bounded uncertain/OOM accounting and recovery; no late commit after releasing slots. | Backend (data-model/design), before contract finalization and executable tasks |
-| DM-OQ-05 | Trusted proxies, address canonicalization, HMAC custody/rotation/restart continuity; no arbitrary forwarded-header trust or quota reset. | Backend/security (design), before contract finalization and executable tasks |
+| DM-OQ-05 | RESOLVED policy: ADR-0007 trusted-address/HMAC/quiet-interval semantics synchronized; no public IP/header fields. Concrete executable fencing remains T2 and actual proxy/key configuration remains deployment work. | T2 integration; T17/T18 configuration/security verification before launch |
 
 Browser/network test profile remains due before plan-tests and UI language/slider behavior before
 screens approval, as already recorded in SAD §11/spec §8. These do not justify fabricated API fields.
@@ -468,8 +511,7 @@ source story/AC coverage and exact field-origin table projection, exercises sche
 checks the maintenance branch table. Read `_audit/api-validation.md` for actual execution results.
 This is structural documentation verification, not an application/security/performance test.
 
-Proposed commit (not executed): `api: short-live-path contract`.
-Next: `screens short-live-path` after review; no no-UI skip applies to declared web-frontend.
+Suggested follow-up: resolve T2, then refresh the affected task/test-planning snapshots. T1 documentation completion does not unblock T3 while T2 is unresolved.
 '''
 
 if __name__ == '__main__':

@@ -5,10 +5,10 @@ info:
   description: 'Anonymous, text-only credential sharing through temporary Share links, with repeated explicit
     reading before service-established expiration and an optional separate Reading code. No accounts,
     history, recovery, early removal, files or external credential revocation. Server-readable ephemeral
-    Secrets are accepted; minimal lifecycle metadata remains durable. DRAFT: finite request/code resource
-    limits, timestamp publication, clocks, admission/recovery and proxy continuity remain blocked by data-model
-    DM-OQ-01 through DM-OQ-05; this is not an executable or finalized security contract. Sources: data-model.md;
-    sad.md S1-S7; spec.md US-01-US-05 and AC-01-AC-12 (including AC-11b).'
+    Secrets are accepted; minimal lifecycle metadata remains durable. T1 policy is synchronized from Accepted
+    ADR-0006/0007. DRAFT: timestamp publication, clocks and executable admission/recovery fencing remain
+    blocked by DM-OQ-02 through DM-OQ-04; this is not an executable or finalized security contract. Sources:
+    data-model.md; sad.md S1-S7; spec.md US-01-US-05 and AC-01-AC-12 (including AC-11b).'
   x-status: Draft
 servers:
 - url: /
@@ -24,15 +24,36 @@ x-source-documents:
 - ../CONTEXT.md
 x-project-decisions:
   error-envelope: Product Owner retained {error:{code,message,details}} during api stage.
+  trusted-address: 'ADR-0007: only a pinned immediate proxy supplies one sanitized literal address. Canonical
+    full IPv6; IPv4-mapped IPv6 shares IPv4 identity. Stable versioned HMAC-SHA-256 labels use a 32-byte
+    deployment key, never logged or client-supplied. Invalid/untrusted context returns 503 service_unavailable
+    before new limiter state; no public forwarding-header parameter.'
+  quota-continuity: 'ADR-0007: preserve same-key counters on ordinary API restart. On continuity loss/rotation
+    close Secret traffic, fence all old mutations, then require at least 60 continuous seconds after the
+    last possible old mutation plus cleanup/reconciliation. Restart the interval on discontinuity; never
+    infer fresh quota from missing state. T2 owns executable time/fencing. No addresses/pseudonyms in
+    logs.'
   authentication: 'ADR-0003/0005 and SAD §8: public capability token plus optional code; no BearerAuth.'
   idempotency: 'S2/DM lifecycle semantics: no automatic retry, deduplication or HTTP Idempotency-Key.
     S7 internal run identity does not add HTTP idempotency.'
 x-unresolved:
-- DM-OQ-01
 - DM-OQ-02
 - DM-OQ-03
 - DM-OQ-04
-- DM-OQ-05
+x-verification-obligations:
+- T21 post-scaffold calibration
+- T17 actual proxy/key provisioning
+- T18 security/fault verification
+x-reading-code-work:
+  algorithm: argon2id
+  version: 19
+  memory-kib: 65536
+  iterations: 3
+  parallelism: 4
+  salt-bytes: 16
+  output-bytes: 32
+  concurrency: 2
+  queue: 0
 paths:
   /api/v1/secrets:
     post:
@@ -46,7 +67,10 @@ paths:
         history or Idempotency-Key guarantee. A manual retry is a new attempt with a fresh token/UUID
         and its own quota gates; possible earlier records retain original expiry. No code-generation endpoint:
         generation is browser-local (twenty unbiased CSPRNG Latin letters/digits). Successful-creation
-        timestamp publication remains DM-OQ-02.'
+        timestamp publication remains DM-OQ-02. Accepted ADR-0006: 1024 UTF-8 code bytes, two concurrent
+        hash calls across creation/disclosure, zero waiting queue. Invalid input or global capacity refusal
+        starts no hash and adds no code failure. Retain permits until native completion after timeout/disconnect;
+        late results do not authorize release.'
       x-user-stories:
       - US-01
       - US-02
@@ -82,6 +106,14 @@ paths:
                   credential: "TEST KEY\n  synthetic line\n"
                   lifetime_minutes: 60
                   reading_code: Test code 123
+        x-max-wire-bytes: 524288
+        x-allowed-content-encodings:
+        - identity
+        description: application/json only, absent or identity Content-Encoding; no compressed body. Enforce
+          524288 wire bytes while receiving, including absent/chunked Content-Length. The wire budget
+          includes escaping/packaging and is separate from Secret aggregate UTF-8 bytes. Reject unsupported
+          media/encoding with 415 and oversized bodies with 413 before hashing or new admission state;
+          safe no-store/no-referrer envelope, no input echo, no incorrect-code failure or confirmed link.
       responses:
         '201':
           description: Confirmed creation only; code and payload are not echoed.
@@ -104,8 +136,8 @@ paths:
                       service_time: '2026-01-01T12:00:00.000Z'
         '422':
           description: Malformed JSON/schema, missing or whitespace-only credential, aggregate text over
-            65536 UTF-8 bytes, invalid integer lifetime or enabled code shorter than six code points.
-            No link.
+            65536 UTF-8 bytes, invalid integer lifetime, enabled code shorter than six code points, or
+            code over 1024 UTF-8 bytes. No hash, failed-code increment or confirmed link on invalid input.
           headers:
             Cache-Control:
               $ref: '#/components/headers/Cache-Control'
@@ -148,9 +180,9 @@ paths:
           - short_live_path.creation_limited
         '503': &id001
           description: 'Temporary no-content refusal: unsafe readiness/clock, failed or uncertain store/accounting,
-            corrupt metadata/payload/verifier, or bounded work exhaustion. Never claim unknown/expired/incorrect
-            code from a timeout. Creation may have occurred: preserve input, never automatically retry
-            or return a link.'
+            corrupt metadata/payload/verifier, invalid trusted-address context, continuity recovery, or
+            bounded work exhaustion. Never claim unknown/expired/incorrect code from a timeout. Creation
+            may have occurred: preserve input, never automatically retry or return a link.'
           headers:
             Cache-Control:
               $ref: '#/components/headers/Cache-Control'
@@ -176,6 +208,46 @@ paths:
           x-error-codes:
           - short_live_path.service_unavailable
           - short_live_path.capacity_unavailable
+        '413':
+          description: Body exceeds 524288 wire bytes; safe proxy/API refusal before expensive work.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                request_too_large:
+                  value:
+                    error:
+                      code: short_live_path.request_too_large
+                      message: Request body exceeds the permitted wire-byte limit. No link is confirmed.
+                      details: []
+          x-error-codes:
+          - short_live_path.request_too_large
+        '415':
+          description: Unsupported media type or Content-Encoding; require uncompressed application/json.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unsupported_media_type:
+                  value:
+                    error:
+                      code: short_live_path.unsupported_media_type
+                      message: Use uncompressed application/json. Request media type or encoding is unsupported.
+                      details: []
+          x-error-codes:
+          - short_live_path.unsupported_media_type
   /api/v1/secrets/{token}/status:
     parameters:
     - &id002
@@ -282,7 +354,7 @@ paths:
       - Secrets
       security: []
       summary: Explicitly show exact Secret text before expiration
-      description: Only explicit Show triggers this request. No session, identity, consumption or view
+      description: 'Only explicit Show triggers this request. No session, identity, consumption or view
         count; repeat and concurrent reading is permitted. Revalidate stored shape and authoritative lifecycle,
         reserve bounded pair/global hash-work admission before verification, and recheck payload/readiness/time
         after asynchronous work immediately before bounded nonstreaming release. Missing code is not a
@@ -290,7 +362,10 @@ paths:
         only its slot, not previous failures. Check conservative monotonic deadline before display/copy;
         discard late or superseded responses, hide offline at expiry, conceal on background and require
         neutral recheck plus fresh Show on return. No automatic retries (they could spend verification
-        allowance). Never claim remote erasure or external credential revocation.
+        allowance). Never claim remote erasure or external credential revocation. Accepted ADR-0006: 1024
+        UTF-8 code bytes, two concurrent hash calls across creation/disclosure, zero waiting queue. Invalid
+        input or global capacity refusal starts no hash and adds no code failure. Retain permits until
+        native completion after timeout/disconnect; late results do not authorize release.'
       x-user-stories:
       - US-03
       - US-04
@@ -323,6 +398,14 @@ paths:
               withCode:
                 value:
                   reading_code: Test code 123
+        x-max-wire-bytes: 524288
+        x-allowed-content-encodings:
+        - identity
+        description: application/json only, absent or identity Content-Encoding; no compressed body. Enforce
+          524288 wire bytes while receiving, including absent/chunked Content-Length. The wire budget
+          includes escaping/packaging and is separate from Secret aggregate UTF-8 bytes. Reject unsupported
+          media/encoding with 415 and oversized bodies with 413 before hashing or new admission state;
+          safe no-store/no-referrer envelope, no input echo, no incorrect-code failure or confirmed link.
       responses:
         '200':
           description: Eligible exact text; original expiration is unchanged.
@@ -415,7 +498,8 @@ paths:
           x-error-codes:
           - short_live_path.link_expired
         '422':
-          description: Malformed JSON, unknown fields, null/non-string code or invalid request shape.
+          description: Malformed JSON, unknown fields, null/non-string/non-scalar code, code over 1024
+            UTF-8 bytes or invalid request shape. No hash or failed-code increment on invalid input.
           headers:
             Cache-Control:
               $ref: '#/components/headers/Cache-Control'
@@ -458,6 +542,46 @@ paths:
           x-error-codes:
           - short_live_path.verification_limited
         '503': *id001
+        '413':
+          description: Body exceeds 524288 wire bytes; safe proxy/API refusal before expensive work.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                request_too_large:
+                  value:
+                    error:
+                      code: short_live_path.request_too_large
+                      message: Request body exceeds the permitted wire-byte limit. No link is confirmed.
+                      details: []
+          x-error-codes:
+          - short_live_path.request_too_large
+        '415':
+          description: Unsupported media type or Content-Encoding; require uncompressed application/json.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/Cache-Control'
+            Referrer-Policy:
+              $ref: '#/components/headers/Referrer-Policy'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unsupported_media_type:
+                  value:
+                    error:
+                      code: short_live_path.unsupported_media_type
+                      message: Use uncompressed application/json. Request media type or encoding is unsupported.
+                      details: []
+          x-error-codes:
+          - short_live_path.unsupported_media_type
 components:
   headers:
     Cache-Control:
@@ -508,14 +632,16 @@ components:
       - credential
     ReadingCode:
       type: string
+      maxLength: 1024
       description: Exact code, including Unicode, case and spaces. Never trim or normalize. Plaintext
         travels only in HTTPS request bodies and is never stored or echoed. The create-only minimum is
         six Unicode code points; disclosure accepts shorter guesses for normal verification accounting.
-        Finite UTF-8/code/request bounds are unresolved under DM-OQ-01; omission of maxLength is NOT unlimited
-        admission.
-      x-unresolved: DM-OQ-01
-      x-origin: spec AC-06/AC-07; data-model.md §ephemeral_secret.code_verifier input
-      x-origin-confidence: medium
+        At most 1024 UTF-8 bytes (ADR-0006); maxLength counts code points and is only a necessary bound.
+        Enforce x-max-utf8-bytes and scalar-text validity before hashing; never truncate. Codes over this
+        bound return 422 invalid_request without a failed verification.
+      x-max-utf8-bytes: 1024
+      x-origin: spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0006 input budget
+      x-origin-confidence: high
     CreateSecretRequest:
       type: object
       additionalProperties: false
@@ -732,6 +858,8 @@ components:
           pattern: ^[a-z_]+\.[a-z_]+$
           enum:
           - short_live_path.invalid_request
+          - short_live_path.request_too_large
+          - short_live_path.unsupported_media_type
           - short_live_path.creation_limited
           - short_live_path.capacity_unavailable
           - short_live_path.service_unavailable
@@ -740,7 +868,7 @@ components:
           - short_live_path.verification_limited
           - short_live_path.link_unavailable
           - short_live_path.link_expired
-          x-origin: API wire projection of sad.md S1-S4/S7 refusal branches
+          x-origin: API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches
           x-origin-confidence: medium
         message:
           type: string

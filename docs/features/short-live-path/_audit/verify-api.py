@@ -11,7 +11,8 @@ from typing import Any
 sys.dont_write_bytecode = True
 
 import yaml
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator, FormatChecker, ValidationError, validators
+import json
 from openapi_spec_validator import validate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -114,11 +115,23 @@ for op in operations:
 assert used_codes == set(schemas['Error']['properties']['code']['enum'])
 checks.append(f'Proposed error code registry coverage: {len(used_codes)} codes: PASS (no runtime registry yet)')
 
+# Exercise the declared UTF-8 extension, not a claim about installed HTTP validators.
+def max_utf8_bytes(validator, limit, value, schema):
+    if isinstance(value, str):
+        try:
+            size = len(value.encode('utf-8'))
+        except UnicodeEncodeError:
+            yield ValidationError('not scalar UTF-8 text')
+            return
+        if size > limit:
+            yield ValidationError('UTF-8 byte budget exceeded')
+
+ByteValidator = validators.extend(Draft202012Validator, {'x-max-utf8-bytes': max_utf8_bytes})
 boundary_count = 0
 
 def boundary(name, value, valid):
     global boundary_count
-    errors = list(Draft202012Validator(resolve(schemas[name])).iter_errors(value))
+    errors = list(ByteValidator(resolve(schemas[name])).iter_errors(value))
     assert bool(errors) != valid, (name, value, errors)
     boundary_count += 1
 
@@ -145,7 +158,14 @@ boundary('ErrorResponse', {'error': {'code': 'short_live_path.code_incorrect', '
                                    'details': []}, 'data': {'credential': 'fragment'}}, False)
 boundary('ErrorResponse', {'error': {'code': 'short_live_path.code_incorrect', 'message': 'test',
                                    'details': [{'credential': 'fragment'}]}}, False)
-checks.append(f'JSON Schema boundary/negative cases: {boundary_count}: PASS')
+for name, base in [('CreateSecretRequest', {'credential': 'test'}), ('DiscloseSecretRequest', {})]:
+    boundary(name, {**base, 'reading_code': 'a' * 1024}, True)
+    boundary(name, {**base, 'reading_code': 'a' * 1025}, False)
+    boundary(name, {**base, 'reading_code': '😀' * 256}, True)
+    boundary(name, {**base, 'reading_code': '😀' * 257}, False)
+    boundary(name, {**base, 'reading_code': '\ud800'}, False)
+boundary('DiscloseSecretRequest', {'reading_code': ''}, True)
+checks.append(f'JSON Schema plus declared UTF-8-extension boundary cases: {boundary_count}: PASS')
 
 pattern = re.compile(projection.param['schema']['pattern'])
 # Deterministic synthetic encodings prove all canonical tail classes and reject noncanonical tail bits.
@@ -163,7 +183,33 @@ checks.append('Canonical token padding-bit/32-byte encoding checks: PASS (256 en
 assert schemas['CreateSecretRequest']['x-max-aggregate-utf8-bytes'] == 65536
 assert schemas['CreateSecretRequest']['x-non-whitespace-fields'] == ['credential']
 assert schemas['CreateSecretRequest']['properties']['lifetime_minutes']['default'] == 60
-assert set(api['x-unresolved']) == {f'DM-OQ-0{i}' for i in range(1, 6)}
+assert set(api['x-unresolved']) == {'DM-OQ-02', 'DM-OQ-03', 'DM-OQ-04'}
+assert schemas['ReadingCode']['x-max-utf8-bytes'] == 1024
+assert schemas['ReadingCode']['maxLength'] == 1024
+assert 'x-unresolved' not in schemas['ReadingCode']
+assert api['x-reading-code-work'] == {
+    'algorithm': 'argon2id', 'version': 19, 'memory-kib': 65536, 'iterations': 3,
+    'parallelism': 4, 'salt-bytes': 16, 'output-bytes': 32, 'concurrency': 2, 'queue': 0}
+for op in operations:
+    if 'requestBody' in op:
+        assert op['requestBody']['x-max-wire-bytes'] == 524288
+        assert op['requestBody']['x-allowed-content-encodings'] == ['identity']
+        assert op['responses']['413']['x-error-codes'] == ['short_live_path.request_too_large']
+        assert op['responses']['415']['x-error-codes'] == ['short_live_path.unsupported_media_type']
+    else:
+        assert '413' not in op['responses'] and '415' not in op['responses']
+assert '60 continuous seconds' in api['x-project-decisions']['quota-continuity']
+assert 'pinned immediate proxy' in api['x-project-decisions']['trusted-address']
+# Worst expansion for a compact JSON serialization: each ASCII control byte escapes to six bytes.
+synthetic = {'address': '', 'login': '', 'credential': '\x00' * 65536,
+             'reading_code': '\x00' * 1024, 'lifetime_minutes': 1440}
+wire = json.dumps(synthetic, ensure_ascii=True, separators=(',', ':')).encode('utf-8')
+assert len(wire) <= 524288
+# JSON can contain arbitrary whitespace: the wire cap is independent of decoded field validity.
+exact = b'{}' + b' ' * (524288 - 2)
+assert len(exact) == 524288 and json.loads(exact) == {}
+assert len(exact + b' ') == 524289
+checks.append(f'Accepted T1 resource/refusal metadata and escaped JSON fit ({len(wire)} bytes): PASS')
 assert not api['security'] and 'securitySchemes' not in api['components']
 assert 'Idempotency-Key' not in str([op.get('parameters', []) for op in operations])
 events = (ROOT / 'contracts/events.md').read_text()
@@ -171,7 +217,7 @@ event_rows = re.findall(r'^\| (.*?) \| (.*?) \|$', events, re.M)[1:]
 assert len(event_rows) == 12
 assert 'no published domain events' in events
 assert 'N,' in events and 'unresolved' in events
-checks.append('Declared semantic constraints, five inherited blockers and twelve S7 maintenance branches: PASS')
+checks.append('Declared semantic constraints, three T2 blockers and twelve S7 maintenance branches: PASS')
 
 summary = '# API validation — short-live-path\n\n'
 summary += '## Results\n\n' + '\n'.join('- ' + check for check in checks) + '\n\n'
@@ -185,13 +231,12 @@ OpenAPI/spec/schema validation and synthetic documentation examples only. No app
 no tests of running HTTP handlers, byte/whitespace/Unicode validators, body admission, PostgreSQL,
 Redis, clocks, cleanup latency, browser clipboard/countdown, proxy behavior, backups, logging,
 security or performance have been executed. Semantic requirements not expressible in JSON Schema
-remain service/browser/infra tests. DM-OQ-01 through DM-OQ-05 still block finalization.
+remain service/browser/infra tests. T1 initial policy is synchronized. DM-OQ-02/03/04 still block finalization; T21 calibration and T17/T18 proxy/security verification remain mandatory.
 
-Independent review delegation was attempted but failed with provider HTTP 429 usage limit;
-no independent review approval is claimed. This verifier is the author-side structural check.
+This verifier is the author-side structural check, not independent security approval.
 Spectral is not installed/wired as a repository check target because no package/check target
 exists. openapi-spec-validator and jsonschema ran in an isolated uv environment without adding
-application dependencies or a manifest. No source specification or migration was edited.
+application dependencies or a manifest. The source spec was synchronized to Accepted ADR-0006/0007; migrations are unchanged.
 '''
 (ROOT / '_audit/api-validation.md').write_text(summary)
 print('\n'.join(checks))

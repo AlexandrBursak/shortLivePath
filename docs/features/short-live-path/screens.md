@@ -16,7 +16,7 @@ The canonical screen manifest for tasks, implement and review. Those stages cons
 - **Inputs:** [ux-flows.md](./ux-flows.md) Screen inventory; [spec.md](./spec.md) §5; [sad.md](./sad.md) §6 S1–S7; [OpenAPI](./contracts/openapi.yaml); [API sync report](./contracts/api-sync-report.md); [events.md](./contracts/events.md).
 - **Scope:** size M, route standard, interview depth medium, responsive web-frontend with backend-service. All five inventory IDs retained; no additional screen, account, history, recovery or management surface.
 - **Component gap:** no existing primitive inventory is available to verify reuse against. Every proposed component is explicitly NEW and justified in New components; names denote proposed responsibilities, not existing imports. Establish docs/design-system.md before implementation, reconcile these against its primitives and register only the necessary additions. No library dependency or design token is assumed here.
-- **Inherited blockers:** the API remains Draft under DM-OQ-01 through DM-OQ-05 in data-model.md (finite code/request bounds, successful-creation timestamp publication, clocks/recovery, atomic admission/fencing and trusted-address continuity). This manifest does not resolve them. In particular, no invented Reading code maximum, request budget, hash cost or safe-deadline algorithm is introduced.
+- **Inherited blockers:** the API remains Draft under T2 DM-OQ-02/03/04 (successful-creation timestamps, clocks/recovery and executable admission/fencing). T1 DM-OQ-01/05 starting policy is Accepted and synchronized from ADR-0006/0007: code maximum 1024 UTF-8 bytes, body maximum 524288 wire bytes, uncompressed JSON, two concurrent hash calls/no queue and trusted-address/continuity refusal. T21 calibration and actual proxy/security verification remain pending; no safe-deadline algorithm is invented.
 
 ## Screens
 
@@ -39,8 +39,9 @@ Entry: initial creation visit or deliberate new creation from SCR-02/SCR-05. Exi
 |---|---|---|---|
 | default | Initial form; 60 minutes, Reading code off; S1, AC-04 | NEW: ScreenFrame, TextField, ExactTextArea, LifetimeControl, ReadingCodeControl, ActionButton, Notice | WF-01-A |
 | empty | No entered text; same form, no fabricated empty-list view; AC-02 | NEW: TextField, ExactTextArea, LifetimeControl | WF-01-A |
-| validation | Required credential missing/whitespace-only, total text above 65536 UTF-8 bytes, invalid lifetime or enabled code below six Unicode code points; createSecret 422 short_live_path.invalid_request; S1 | NEW: TextField, ExactTextArea, LifetimeControl, ReadingCodeControl, Notice | WF-01-B |
+| validation | Required credential missing/whitespace-only, total text above 65536 UTF-8 bytes, invalid lifetime, enabled code below six Unicode code points or any code above 1024 UTF-8 bytes; createSecret 422 short_live_path.invalid_request; S1 | NEW: TextField, ExactTextArea, LifetimeControl, ReadingCodeControl, Notice | WF-01-B |
 | loading | One explicit creation pending; retain current values, freeze submitted controls and disable resubmit; S1/S2 | NEW: ActionButton, Notice | WF-01-C |
+| error.transport | createSecret 413 short_live_path.request_too_large or 415 short_live_path.unsupported_media_type; preserve exact form input, no link or automatic retry; Accepted ADR-0006 | NEW: Notice, ActionButton | WF-01-D |
 | error.creation_limited | createSecret 429 short_live_path.creation_limited; retain text and explain waiting; NFR-05/S2 | NEW: Notice, ActionButton | WF-01-D |
 | error.capacity_unavailable | createSecret 503 short_live_path.capacity_unavailable; preserve text, no link, no eviction promise as UI evidence; S2 | NEW: Notice, ActionButton | WF-01-D |
 | error.service_unavailable | createSecret 503 short_live_path.service_unavailable; no confirmed outcome, preserve text; S2 | NEW: Notice, ActionButton | WF-01-D |
@@ -84,7 +85,7 @@ When code protection is enabled, insert the following block before Create Secret
 | Send the code separately from the Share link.  |
 ```
 
-Use unbiased cryptographically secure browser-local generation of twenty Latin letters/digits. No endpoint is needed. No complexity rule blocks an otherwise valid code; longer codes and any character composition are allowed subject to the still-unresolved finite request bounds. Disabled protection omits reading_code rather than sending an empty string/null. Do not trim chosen codes. No sensitive form persistence or recovery.
+Use unbiased cryptographically secure browser-local generation of twenty Latin letters/digits. No endpoint is needed. No complexity rule blocks an otherwise valid code; longer codes and any character composition are allowed up to 1024 UTF-8 bytes. Show the byte maximum in help/error text, validate before submission, retain exact input on rejection and never truncate. The HTTP body maximum is 524288 wire bytes, separate from the aggregate Secret size. Disabled protection omits reading_code rather than sending an empty string/null. Do not trim chosen codes. No sensitive form persistence or recovery.
 
 #### WF-01-B — validation
 
@@ -100,7 +101,7 @@ Use unbiased cryptographically secure browser-local generation of twenty Latin l
 | [ Create Secret ]                              |
 ```
 
-Show only applicable errors. Byte count sums address, login and credential, excluding code/packaging. API details is always []; do not invent server field-error entries or echo submitted values. Derive field-specific errors from local checks; otherwise show a safe form-level 422 explanation. Server validation remains authoritative.
+Show only applicable errors. Byte count sums address, login and credential, excluding code/packaging. API details is always []; do not invent server field-error entries or echo submitted values. Derive field-specific errors from local checks; otherwise show a safe form-level 422 explanation. Server validation remains authoritative. Explain code overflow as a 1024 UTF-8 byte maximum, never as a wrong code; transport 413/415 uses the safe Notice without echoing submitted values.
 
 #### WF-01-C — loading
 
@@ -180,6 +181,7 @@ Entry: initial/repeat /s/{token} visit or return after concealment; never auto-d
 | loading.disclosure | Explicit Show pending; no content, disable repeated submission, no automatic retry | NEW: ActionButton, Notice | WF-03-B |
 | error.code_incorrect | discloseSecret 403 short_live_path.code_incorrect; no fragments or permanent consumption | NEW: TextField, Notice, ActionButton | WF-03-C |
 | error.verification_limited | discloseSecret 429 short_live_path.verification_limited; shared link/address slots occupied | NEW: Notice, ActionButton | WF-03-C |
+| error.transport | discloseSecret 413 short_live_path.request_too_large or 415 short_live_path.unsupported_media_type; keep gate concealed and exact current code, explain safe refusal, no failure-count claim or automatic retry | NEW: Notice, ActionButton | WF-03-C |
 | error.invalid_request | discloseSecret 422 short_live_path.invalid_request; safe request explanation, no fabricated field details | NEW: Notice, ActionButton | WF-03-C |
 | error.temporary | Status/disclosure 503 short_live_path.service_unavailable or short_live_path.capacity_unavailable; network/offline/invalid response; never claim wrong code, expiry or unknown from a timeout | NEW: Notice, ActionButton | WF-03-D |
 | concealed | Background/resume/discontinuity: no old content/copy; recheck status then require fresh Show; S6 | NEW: Notice, ActionButton | WF-03-B / WF-03-D |
@@ -204,7 +206,7 @@ Entry: initial/repeat /s/{token} visit or return after concealment; never auto-d
 +------------------------------------------------+
 ```
 
-No address, login, credential or code verifier in the neutral response, HTML, title or preview. An available status is not a reservation or guarantee of later availability. Code entry preserves exact case/spaces; no create-only six-code-point minimum applies to disclosure guesses. Send {} for unprotected disclosure; do not start verification on field edits or page open. Code success grants no identity/session/future automatic access.
+No address, login, credential or code verifier in the neutral response, HTML, title or preview. An available status is not a reservation or guarantee of later availability. Code entry preserves exact case/spaces; no create-only six-code-point minimum applies to disclosure guesses, but the 1024 UTF-8 byte maximum still applies, including to explicitly supplied empty guesses. Send {} for unprotected disclosure; do not start verification on field edits or page open. Code success grants no identity/session/future automatic access.
 
 #### WF-03-B — status / disclosure loading / concealed
 

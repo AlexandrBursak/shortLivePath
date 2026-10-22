@@ -15,7 +15,7 @@ ticket: null
 
 ## Context
 
-SAD §§4/8/11 and data-model DM-OQ-01 require a concrete password-hard verifier and finite work/input budgets before implementation. AC-06 preserves exact codes, including spaces and Unicode, and accepts codes longer than its six-code-point minimum; it does not provide an unlimited HTTP or memory budget. AC-07's per-link/address limiter alone cannot bound hash work from many addresses. These initial values are accepted; no installed dependency, benchmark result or completion of T1 contract synchronization is claimed.
+SAD §§4/8/11 and data-model DM-OQ-01 require a concrete password-hard verifier and finite work/input budgets before implementation. AC-06 preserves exact codes, including spaces and Unicode, and accepts codes longer than its six-code-point minimum; it does not provide an unlimited HTTP or memory budget. AC-07's per-link/address limiter alone cannot bound hash work from many addresses. These initial values are accepted; T1 source synchronization is complete, while no installed dependency or benchmark result is claimed.
 
 ## Decision drivers
 
@@ -47,7 +47,7 @@ Accepted starting profile, subject to T21 calibration:
 | HTTP body | At most 524288 wire bytes for creation/disclosure, enforced while receiving at proxy and API, including absent/chunked Content-Length. Accept only identity Content-Encoding initially; reject compressed bodies before decompression. |
 | Invalid input | Validate scalar text, schema, aggregate Secret size and code bytes before hash admission. Oversize/unsupported encoding produces a safe no-store client error, no link and no hash; exact HTTP/error mapping must be synchronized through the API stage before feature implementation. |
 
-The hash parameters follow RFC 9106 §4's second recommended profile, not a claim that the target host can sustain it. Product Owner accepted the body/code restrictions as starting values. T1 must synchronize spec, OpenAPI (including transport errors), browser guidance and validation before feature implementation. A JSON serialization of otherwise valid data must fit the wire bound; test heavily escaped 64 KiB text and maximum code rather than silently truncating or imposing a smaller aggregate Secret limit.
+The hash parameters follow RFC 9106 §4's second recommended profile, not a claim that the target host can sustain it. Product Owner accepted the body/code restrictions as starting values. T1 has synchronized spec, OpenAPI (including transport errors), browser guidance and structural validation. Runtime validators remain implementation work. A JSON serialization of otherwise valid data must fit the wire bound; test heavily escaped 64 KiB text and maximum code rather than silently truncating or imposing a smaller aggregate Secret limit.
 
 Acquire the process-wide work permit and the relevant Redis creation/pair reservation before dispatching native work; if either gate refuses, safely release the other without counting a code failure. The T2 protocol must define acquisition order, reservation fencing and completion accounting. A timeout or client disconnect does NOT release a work permit until native computation actually ends; discard late results and recheck readiness/deadline before any disclosure. Native cancellation must not be assumed. Pending codes stay only in bounded request/work memory, never Redis queues, logs or metrics. The HTTP layer still needs measured connection/in-flight body limits: a two-call hash cap alone is not a whole-process memory bound.
 
@@ -59,7 +59,7 @@ Follow-up verification obligations (not prerequisites for Accepted status):
 - Run a reproducible container benchmark using synthetic six-code-point, generated twenty-character, maximum-byte and exact-Unicode cases; record cold/warm hash and verify latency, memory/RSS, event-loop delay, throughput and rejections. Compare accepted initial costs/work cap under the approved ten-operation workload with an explicit create/read/code mix. Representative host/network profile remains unselected; no measured performance claim is made.
 - AC-06 vectors: six multibyte code points; byte bound and one byte over; composed/decomposed Unicode, case and trailing-space differences; short disclosure guesses; heavily escaped maximum-size JSON. Exact matching must survive round trips.
 - AC-07 vectors: distributed pairs cannot exceed the global work cap; pair/global refusal starts no native work; successful verification does not erase failures; stale/aborted work retains its permit until completion; malformed PHC values cannot request attacker-selected costs. T2 must supply reservation-race proof separately.
-- Product Owner approval is recorded above. T1 still owns source-contract synchronization; T2 owns reservation integration, T21 owns calibration, and implementation/security tasks own runtime vectors. Initial parameter selection is accepted; verification is deferred explicitly, not waived. No vector above has run against an application.
+- Product Owner approval is recorded above. T1 source-contract synchronization is complete; T2 owns reservation integration, T21 owns calibration, and implementation/security tasks own runtime vectors. Initial parameter selection is accepted; verification is deferred explicitly, not waived. No vector above has run against an application.
 
 ## Consequences
 

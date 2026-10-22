@@ -4,11 +4,11 @@
 
 Size M, route standard (read from .size/.route). HTTP/REST backend-service is declared alongside
 web-frontend in SAD frontmatter. data-model.md, sad.md and spec.md are present. No application,
-manifest, live error registry, existing contract or check target exists in this repo.
+manifest, live error registry or application check target exists in this repo; the existing contract is reconciled in place.
 
 DRAFT — wire projection is source-aligned subject to the explicitly inherited DM-OQ blockers below.
 No implementation, security, performance, retention or runtime correctness is claimed by contract linting.
-Source documents and migrations are unchanged. No commit is made.
+T1 source synchronization applies Accepted ADR-0006/0007 to spec, model, SAD and this contract. Migrations are unchanged. No runtime verification or new commit is claimed by this report.
 
 ## Resolved conventions
 
@@ -24,6 +24,9 @@ Source documents and migrations are unchanged. No commit is made.
   or public maintenance endpoint is justified by these stories. Such surfaces are not invented.
 - No central error registry found: neutral short_live_path.* codes are contract proposals. Reconcile
   with the future backend registry and validators; this is not evidence of existing runtime constants.
+- Accepted ADR-0006/0007 set the initial 1024 UTF-8 code bytes, 524288 wire-body bytes, Argon2id work budget,
+  trusted-address policy and continuity refusal semantics. Two hash calls and no queue are not throughput measurements.
+  T21 calibrates after T3; actual proxy/key controls and fault tests remain T17/T18.
 - Async S7 maintenance is documented in events.md as internal triggers, not an external integration,
   message bus, persistent queue or fourth deployment surface.
 
@@ -42,29 +45,39 @@ verifier, reservations, address labels and created_at stay off the public interf
 | `createSecret.request.credential` | data-model.md §ephemeral_secret.credential; spec AC-02/AC-03 | high |
 | `createSecret.request.lifetime_minutes` | data-model.md §link_lifecycles.expires_at - created_at; spec AC-04/AC-05 | high |
 | `createSecret.request.login` | data-model.md §ephemeral_secret.login; spec AC-02/AC-03 | high |
-| `createSecret.request.reading_code.allOf[0]` | spec AC-06/AC-07; data-model.md §ephemeral_secret.code_verifier input | medium |
+| `createSecret.request.reading_code.allOf[0]` | spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0006 input budget | high |
 | `createSecret.response.201.data.expires_at` | data-model.md §link_lifecycles.expires_at; §ephemeral_secret.expires_at_ms | high |
 | `createSecret.response.201.data.share_url` | data-model.md §Token and digest representation; sad.md S1; spec AC-01/AC-06 | medium |
 | `createSecret.response.201.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `createSecret.response.201.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
 | `createSecret.response.201.meta.service_time` | sad.md S1/S3/S4/S6; spec AC-04/AC-10 service timing | medium |
-| `createSecret.response.422.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `createSecret.response.413.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
+| `createSecret.response.413.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
+| `createSecret.response.413.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
+| `createSecret.response.413.header.Cache-Control` | sad.md §8 cache/browser headers | high |
+| `createSecret.response.413.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
+| `createSecret.response.415.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
+| `createSecret.response.415.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
+| `createSecret.response.415.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
+| `createSecret.response.415.header.Cache-Control` | sad.md §8 cache/browser headers | high |
+| `createSecret.response.415.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
+| `createSecret.response.422.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `createSecret.response.422.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `createSecret.response.422.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `createSecret.response.422.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `createSecret.response.422.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
-| `createSecret.response.429.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `createSecret.response.429.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `createSecret.response.429.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `createSecret.response.429.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `createSecret.response.429.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `createSecret.response.429.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
-| `createSecret.response.503.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `createSecret.response.503.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `createSecret.response.503.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `createSecret.response.503.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `createSecret.response.503.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `createSecret.response.503.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.path.token` | data-model.md §Token and digest representation | high |
-| `discloseSecret.request.reading_code` | spec AC-06/AC-07; data-model.md §ephemeral_secret.code_verifier input | medium |
+| `discloseSecret.request.reading_code` | spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0006 input budget | high |
 | `discloseSecret.response.200.data.expires_at` | data-model.md §link_lifecycles.expires_at; §ephemeral_secret.expires_at_ms | high |
 | `discloseSecret.response.200.data.secret.address` | data-model.md §ephemeral_secret.address; spec AC-02/AC-03 | high |
 | `discloseSecret.response.200.data.secret.credential` | data-model.md §ephemeral_secret.credential; spec AC-02/AC-03 | high |
@@ -72,32 +85,42 @@ verifier, reservations, address labels and created_at stay off the public interf
 | `discloseSecret.response.200.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.response.200.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.response.200.meta.service_time` | sad.md S1/S3/S4/S6; spec AC-04/AC-10 service timing | medium |
-| `discloseSecret.response.403.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `discloseSecret.response.403.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `discloseSecret.response.403.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `discloseSecret.response.403.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `discloseSecret.response.403.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.response.403.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
-| `discloseSecret.response.409.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `discloseSecret.response.409.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `discloseSecret.response.409.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `discloseSecret.response.409.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `discloseSecret.response.409.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.response.409.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
-| `discloseSecret.response.410.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `discloseSecret.response.410.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `discloseSecret.response.410.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `discloseSecret.response.410.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `discloseSecret.response.410.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.response.410.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
-| `discloseSecret.response.422.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `discloseSecret.response.413.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
+| `discloseSecret.response.413.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
+| `discloseSecret.response.413.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
+| `discloseSecret.response.413.header.Cache-Control` | sad.md §8 cache/browser headers | high |
+| `discloseSecret.response.413.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
+| `discloseSecret.response.415.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
+| `discloseSecret.response.415.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
+| `discloseSecret.response.415.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
+| `discloseSecret.response.415.header.Cache-Control` | sad.md §8 cache/browser headers | high |
+| `discloseSecret.response.415.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
+| `discloseSecret.response.422.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `discloseSecret.response.422.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `discloseSecret.response.422.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `discloseSecret.response.422.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.response.422.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
-| `discloseSecret.response.429.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `discloseSecret.response.429.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `discloseSecret.response.429.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `discloseSecret.response.429.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `discloseSecret.response.429.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.response.429.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
-| `discloseSecret.response.503.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `discloseSecret.response.503.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `discloseSecret.response.503.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `discloseSecret.response.503.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `discloseSecret.response.503.header.Cache-Control` | sad.md §8 cache/browser headers | high |
@@ -114,7 +137,7 @@ verifier, reservations, address labels and created_at stay off the public interf
 | `getSecretStatus.response.200.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `getSecretStatus.response.200.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
 | `getSecretStatus.response.200.meta.service_time` | sad.md S1/S3/S4/S6; spec AC-04/AC-10 service timing | medium |
-| `getSecretStatus.response.503.error.code` | API wire projection of sad.md S1-S4/S7 refusal branches | medium |
+| `getSecretStatus.response.503.error.code` | API wire projection of sad.md S1-S4/S7 and T1 transport refusal branches | medium |
 | `getSecretStatus.response.503.error.details` | backend/docs/architecture.md §The API contract; sad.md §2/§8 error envelope | medium |
 | `getSecretStatus.response.503.error.message` | spec AC-02/AC-05/AC-07/AC-09/AC-11b; sad.md safe refusal branches | medium |
 | `getSecretStatus.response.503.header.Cache-Control` | sad.md §8 cache/browser headers | high |
@@ -132,8 +155,9 @@ verifier, reservations, address labels and created_at stay off the public interf
    aggregate text <=65536 UTF-8 bytes; credential not whitespace-only; create code minimum six Unicode
    code points; exact Unicode/spaces/newlines; millisecond UTC timestamps. Aggregate bytes, canonical
    decoding, stored-record consistency and clocks need service validators, not a misleading maxLength.
-   The finite code/body limit is unresolved, not invented. No per-field byte or arbitrary URL/login
-   format rule restricts valid Secret text. Null is not an alias for omitted optional text/code.
+   Accepted ADR-0006 supplies code <=1024 UTF-8 bytes (maxLength is NOT a byte validator), body <=524288 wire bytes,
+   identity-only encoding and no queued hash work. Body overflow is 413; media/encoding refusal is 415; code overflow is 422.
+   No per-field byte or arbitrary URL/login format rule restricts valid Secret text. Null is not an alias for omitted optional text/code.
 4. ✓ OpenAPI ↔ sequences (supporting): HTTP methods/statuses/field names are derived here; sequences
    intentionally use semantic messages. Mapping below covers service outcomes and distinguishes
    no-response/network loss and browser/internal branches from representable HTTP responses.
@@ -152,8 +176,8 @@ verifier, reservations, address labels and created_at stay off the public interf
 | AC-03 | createSecret 201; discloseSecret 200 Secret fields | S5 exact inert rendering and clipboard, no newline rewriting |
 | AC-04 | createSecret 201/default 60; status/disclosure service_time + expires_at | S6 conservative monotonic timing; minute-level slider |
 | AC-05 | createSecret 422; integer lifetime bounds | Explain bounds without clamping |
-| AC-06 | createSecret 201/422; discloseSecret 200/403 | Local generator; nonblocking weak-code advice; no code in URL |
-| AC-07 | discloseSecret 403/429/503 | Pair reservations and salted verifier; no consuming/rebinding link |
+| AC-06 | createSecret 201/422/413/415; discloseSecret 200/403/422/413/415 | Local generator; nonblocking weak-code advice; no code in URL |
+| AC-07 | discloseSecret 403/422/429/503; transport 413/415 before code work | Pair reservations and salted verifier; no consuming/rebinding link |
 | AC-08 | getSecretStatus 200; discloseSecret 200 | Initial/repeat neutral page; no automatic Show or consumption |
 | AC-09 | getSecretStatus 200 unknown/expired/early_unavailable; discloseSecret 409/410 | Original browser URL shows state, never a missing-page experience |
 | AC-10 | discloseSecret 410/503 final check; status revalidation | S5/S6 late-response discard, offline hide, concealed resume |
@@ -184,7 +208,10 @@ API responses support but do not themselves prove browser-only or infrastructure
 | S3/S4 corrupt/inconsistent payload/verifier | 503 service_unavailable; safe no-content failure, never code-disabled |
 | S3 eligible gate | 200 available + reading_code_required + unchanged expires_at, no Secret |
 | S3 late arrival, repeat visit | UI discards expired gate; starts neutral, never auto-discloses |
-| S4 invalid body/request bounds | 422 invalid_request; concrete resource upper bound awaits DM-OQ-01 |
+| S1/S4 invalid schema/code bytes | 422 invalid_request; maximum code 1024 UTF-8 bytes before hash, no incorrect-code failure |
+| T1 transport refinement: oversized wire body | createSecret/discloseSecret 413 request_too_large; maximum 524288 wire bytes, safe envelope/headers |
+| T1 transport refinement: unsupported media/compression | createSecret/discloseSecret 415 unsupported_media_type; uncompressed application/json only |
+| T1 trusted-address/continuity refinement | all Secret operations 503 service_unavailable before new limiter state when context/readiness is unsafe; no client-settable identity header |
 | S4 malformed/unknown token | 409 link_unavailable; malformed stops before lookup |
 | S4 no required code | authorize only current request; final checks still mandatory |
 | S4 required code absent/incorrect with confirmed accounting | 403 code_required / code_incorrect, no payload |
@@ -201,7 +228,8 @@ API responses support but do not themselves prove browser-only or infrastructure
 | S7 duplicate/current run, health failure, bounded batch/retry/dead-letter/recovery checks | internal events.md, serving gate exposes only 503 until ready |
 | S7 early payload loss/metadata-only restoration | status early_unavailable before expiry, expired after; no payload recovery |
 
-No new missing-AC or missing-sequence branch was found. Mapping of safe invalid-record refusal to
+T1 transport/refusal branches are explicitly sourced from SAD §6 T1 transport and admission refinements;
+no new endpoint or unsupported sequence assumption is introduced. No unresolved missing-AC/branch gap was found. Mapping of safe invalid-record refusal to
 503 is the technical temporary-failure class in data-model.md §Lifecycle and failure semantics;
 it does not label corruption as a proven incorrect code. Status terminal states intentionally use
 200, while explicit disclosure refusals use the error envelope. A 410 API response must not become
@@ -209,15 +237,15 @@ an HTTP 404 web page. Intermediaries must apply the same noncacheable/sanitized 
 
 ## Inherited open decisions — finalization gate
 
-These are existing source obligations, not newly accepted defaults or waivers. No source was edited.
+T1 is synchronized from explicitly Accepted ADR-0006/0007. Remaining T2 decisions below are not waived. No runtime correctness follows from source synchronization.
 
 | ID | Contract impact | Owner / due |
 |---|---|---|
-| DM-OQ-01 | Concrete finite UTF-8/code/body budget, hash suite/cost and global queue/concurrency. Until resolved, lack of maxLength does not authorize unbounded input; proxy limits must not silently shrink valid 65536-byte text after JSON escaping. Decide any body-size status/schema branches together. | Backend/security (data-model/design), before contract finalization and executable tasks |
+| DM-OQ-01 | RESOLVED initial policy: ADR-0006 code/work/body budgets and safe 413/415/422/503 projection synchronized. No runtime limit or performance has been measured. | Calibration T21 after T3; final performance T20 |
 | DM-OQ-02 | Successful-creation anchor and final timestamps across PostgreSQL then Redis. Matching DTO timestamps alone cannot prove exact lifetime from successful creation. | Backend with Product Owner (data-model/design), before contract finalization and executable tasks |
 | DM-OQ-03 | Safe authoritative/monotonic timing, transit-aware client deadline, discontinuity detection, cleanup batches/retry budgets and current-run fencing. | Backend/frontend (design/sequences), before contract finalization and executable tasks |
 | DM-OQ-04 | Admission leases/fencing, bounded uncertain/OOM accounting and recovery; no late commit after releasing slots. | Backend (data-model/design), before contract finalization and executable tasks |
-| DM-OQ-05 | Trusted proxies, address canonicalization, HMAC custody/rotation/restart continuity; no arbitrary forwarded-header trust or quota reset. | Backend/security (design), before contract finalization and executable tasks |
+| DM-OQ-05 | RESOLVED policy: ADR-0007 trusted-address/HMAC/quiet-interval semantics synchronized; no public IP/header fields. Concrete executable fencing remains T2 and actual proxy/key configuration remains deployment work. | T2 integration; T17/T18 configuration/security verification before launch |
 
 Browser/network test profile remains due before plan-tests and UI language/slider behavior before
 screens approval, as already recorded in SAD §11/spec §8. These do not justify fabricated API fields.
@@ -230,5 +258,4 @@ source story/AC coverage and exact field-origin table projection, exercises sche
 checks the maintenance branch table. Read `_audit/api-validation.md` for actual execution results.
 This is structural documentation verification, not an application/security/performance test.
 
-Proposed commit (not executed): `api: short-live-path contract`.
-Next: `screens short-live-path` after review; no no-UI skip applies to declared web-frontend.
+Suggested follow-up: resolve T2, then refresh the affected task/test-planning snapshots. T1 documentation completion does not unblock T3 while T2 is unresolved.

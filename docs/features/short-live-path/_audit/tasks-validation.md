@@ -1,6 +1,6 @@
 # Tasks validation — short-live-path
 
-> Current acceptance-change verification: verify-tasks.py PASS for 21 tasks, all 13 ACs, exact JSON/frontmatter mirrors, acyclic DAG, inverse blocks, source quotations, context budgets and Mermaid structural lint. ADR-0006/0007 each pass structural self-check 6/6; local links resolve. git diff --check passed. No benchmark/runtime test was executed.
+> Current T1 synchronization verification: T1 is done for documentation/policy only; T2 DM-OQ-02/03/04 still blocks implementation. Accepted ADR-0006/0007 are synchronized into spec, model, SAD, API and UI guidance. T21 remains after T3 and before final T20. verify-api.py PASS (OpenAPI 3.1, 31 examples, 101 field-origin rows, 36 schema/UTF-8 boundary cases, 11 error codes) and verify-tasks.py PASS (21 tasks, 13 ACs, DAG/inverse/mirrors/provenance/context budgets); git diff --check PASS; no runtime, benchmark or independent security approval follows from these structural checks.
 
 > Historical baseline report below (20 tasks). ADR-0006/0007 were subsequently accepted as starting values by Product Owner on 2026-10-22; the benchmark moved to T21 after T3, gating T20. The current DAG has 21 tasks, 154h / 19.25 person-days. Re-run verify-tasks.py for current structural evidence. Prior no-commit/readiness statements below describe the earlier breakdown only, not this acceptance change.
 

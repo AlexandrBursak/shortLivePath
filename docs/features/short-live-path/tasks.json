@@ -13,7 +13,10 @@
       "files_hint": [
         "docs/features/short-live-path/adr/",
         "docs/features/short-live-path/data-model.md",
-        "docs/features/short-live-path/contracts/openapi.yaml"
+        "docs/features/short-live-path/contracts/openapi.yaml",
+        "docs/features/short-live-path/spec.md",
+        "docs/features/short-live-path/_audit/generate-api.py",
+        "docs/features/short-live-path/_audit/verify-api.py"
       ],
       "file": "docs/features/short-live-path/tasks/resolve-verifier-address-policy.md",
       "dod": "Record Accepted ADR-0006/0007 starting values and synchronize model/spec/API policy with explicit remaining T2 and deployment obligations; benchmark evidence belongs to post-scaffold T21, not this gate."

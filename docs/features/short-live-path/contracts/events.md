@@ -42,7 +42,7 @@ state are handler context, with concrete representation unresolved in DM-OQ-03/0
 
 Origin: S7 “Startup, reconnection, store identity change or runtime or clock discontinuity”.
 Close Secret traffic first, fence old eligibility and remove expired records/reconcile
-reservations before reopening. Failed PostgreSQL health keeps serving closed without stopping
+reservations before reopening. Accepted ADR-0007 additionally requires a fenced continuous quiet interval of at least sixty seconds after the last possible old mutation when continuity is lost or a key rotates. Repeated discontinuity restarts the interval; elapsed time without proven fencing cannot reopen traffic. A successful sweep alone is insufficient. T2 still defines executable time/fencing mechanics, not a guessed startup sleep. Failed PostgreSQL health keeps serving closed without stopping
 Redis cleanup that can still execute. Metadata restoration never restores payloads/verifiers.
 
 ## Idempotency and retry
