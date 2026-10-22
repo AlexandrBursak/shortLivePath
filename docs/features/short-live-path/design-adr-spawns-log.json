@@ -1,0 +1,32 @@
+[
+  {
+    "adr_id": "0001",
+    "title": "Build a responsive web frontend and backend service",
+    "section": 4,
+    "triggered_by": "DEC-4-target-surfaces: approved web-frontend and backend-service; multi-module responsibilities and expensive boundary rework"
+  },
+  {
+    "adr_id": "0002",
+    "title": "Use a neutral Next.js server shell with browser-only Secret processing",
+    "section": 4,
+    "triggered_by": "DEC-4-ui-architecture: approved hybrid delivery rather than static hosting; multi-module boundary and legitimate alternatives; subsequently superseded by ADR-0003"
+  },
+  {
+    "adr_id": "0003",
+    "title": "Use server-readable ephemeral Secrets with an optional Reading code",
+    "section": 4,
+    "triggered_by": "DEC-4-operator-confidentiality-boundary: explicit Product Owner confirmation; cross-module and expensive boundary reversal; supersedes ADR-0002"
+  },
+  {
+    "adr_id": "0004",
+    "title": "Scope ephemeral deletion to running cleanup and gate recovery before serving",
+    "section": 4,
+    "triggered_by": "DEC-4-scoped-retention: explicit Product Owner choice 1; revises retention contract and deployment/recovery obligations"
+  },
+  {
+    "adr_id": "0005",
+    "title": "Persist minimal link lifecycle metadata indefinitely",
+    "section": 5,
+    "triggered_by": "DEC-5-persist-link-metadata: Product Owner requests PostgreSQL, countdown and durable expired-link state; accepts indefinite retention for now"
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "decision_id": "DEC-2-stack-layout-delivery",
+    "action": "edit",
+    "before": "Retain the prescribed stack, keep backend/frontend together, preserve conventions, and leave organisational constraints unspecified.",
+    "after": "Include Redis in the intended stack with storage role pending separate approval; keep backend/frontend in one repository; implementation by Product Owner and coding agent, preferably in the current overnight working session, without waiving security gates.",
+    "user_reason": "1. в загальному так, і я думаю тут буде гарно вписуватись також Redis\n2. для цього проєкту хай буде разом\n3. ок\n4. ми самі це бцдемо реалізовувати і бажано сьогодні за ніч"
+  },
+  {
+    "decision_id": "DEC-4-key-delivery-wording",
+    "action": "edit",
+    "before": "Explain how to deliver key material to Recipient through the Share link fragment or a separate handover.",
+    "after": "Use plain wording: one Share link can be sent to multiple people; no recipient identification, recipient list, registration or per-person binding. Recipient is only a glossary role for anyone reading the link. Fragment-based key delivery remains proposed, not approved by this correction.",
+    "user_reason": "3. щось ти дуже ускладнюєш, не розумію навіщо нам якось визначати або зазначати отримувача (Recipient)? посиалння може бути відправлено декільком людям"
+  },
+  {
+    "decision_id": "DEC-4-operator-confidentiality-boundary",
+    "action": "edit",
+    "before": "The server must not receive plaintext Secrets, plaintext Reading codes or content-decryption keys; confidentiality processing stays in the browser.",
+    "after": "Product Owner states server access to Secret content during link lifetime is acceptable. Proposed replacement: server-readable processing with optional server-verified Reading code, access by possession of the link, and unchanged expiration/erasure and no-sensitive-logging/backups requirements. Product Owner subsequently confirmed the simplified model and optional code (так підтверджую). Spec, UX and SAD synchronized; ADR-0003 supersedes ADR-0002. Detailed verifier, infrastructure erasure and resource limits remain pending.",
+    "user_reason": "чесно кажучи, мене не хвилює чи отримає якісь дані сервер, поки живе посилання, ці дані може отримати будь-хто хто має це посилання і там ж й сам сервер"
+  },
+  {
+    "decision_id": "DEC-4-scoped-retention",
+    "action": "edit",
+    "before": "Delete active Secret data within sixty seconds of expiration including across all failures and recovery.",
+    "after": "Delete active records within sixty seconds while Redis can execute cleanup; no physical RAM-erasure deadline during process/VM suspension or hang; clear expired records before Secret traffic resumes after recovery. Keep no disk persistence, Secret backups or recovery. Spec AC-11/NFR-03, security text, KPI, SAD and UX synchronized; ADR-0004 records the approved revision.",
+    "user_reason": "1 — accepted the proposed scoped deletion guarantee rather than retaining unconditional deletion during suspension/hang as a blocker"
+  },
+  {
+    "decision_id": "DEC-4-office-creation-rate",
+    "action": "edit",
+    "before": "At most 10 successful creations in any rolling 60-second window per network address.",
+    "after": "At most 100 successful creations in any rolling 60-second window per network address; office users share a public IP. Other proposed package values remain unapproved. Wrong-code attempt protection is unchanged.",
+    "user_reason": "10 на один ІП -  це дуже мало, атк як цей сервіс робиться для офісу, поставь ліміт хочаб 100"
+  },
+  {
+    "decision_id": "DEC-5-persist-link-metadata",
+    "action": "edit",
+    "before": "Use Next.js, AdonisJS and ephemeral Redis only; do not run PostgreSQL for v1.",
+    "after": "Product Owner requests PostgreSQL for durable link lifecycle metadata so an expired link can be recognized after Secret deletion, plus a visible remaining-lifetime countdown. Secret content stays ephemeral in Redis. Proposed metadata is an opaque link lookup digest, creation and expiration timestamps, with no content, Reading code or full Share link. Product Owner subsequently chose indefinite metadata retention for now (1 поки безстроково, далі подивимось). Known expired links show expired, unknown links show safe unavailability, and known unexpired links missing Redis content show early unavailability. Spec, UX, SAD and ADR-0005 synchronize this approved amendment.",
+    "user_reason": "2. напевно PostgreSQL таки потрібно добавляти, тому що я хочу щоб ми бачили на сторінці лічильник як довго щ ебуде жити посилання. І щоб коли посилання expired, на це посилання все що можна було зайти і побачити що воно саме не доступне, а не відсутнє в системі. А ці дані вже мають якраз ждити в PostgreSQL"
+  },
+  {
+    "decision_id": "DEC-10-office-creation-rate",
+    "action": "edit",
+    "before": "At most 100 successful creations in any rolling 60-second window per network address.",
+    "after": "At most 25 successful creations in any rolling 60-second window per network address. All other proposed §10 quality checks approved unchanged. Supersedes DEC-4-office-creation-rate; wrong-code protection and other capacity budgets unchanged.",
+    "user_reason": "6. напевно навіть офіс 100 людей за 1 хвилину не зможе згенерувати 100 посилань, тому давай зменшимо до 25. все решта гуд"
+  },
+  {
+    "decision_id": "DEC-11-deferred-1",
+    "action": "save_as_oq",
+    "before": "code hash suite/library/cost, bounded verification queue and request/code resource budget",
+    "after": "| Open architectural decision: code hash suite/library/cost, bounded verification queue and request/code resource budget | Open question | Resolve before implementation begins, with concrete values before tasks are executable; security review and load-test plan must reconcile arbitrary longer codes with finite request/memory budgets. Product approval of principles is not approval of a library or unbounded input. | Security responsibility: Product Owner and coding agent |",
+    "user_reason": "1 — Product Owner accepted the proposed risk register, responsibility assignments and due-stage triggers."
+  },
+  {
+    "decision_id": "DEC-11-deferred-2",
+    "action": "save_as_oq",
+    "before": "authoritative clock, creation timestamp publication across PostgreSQL/Redis, atomic quota/capacity accounting and failure cleanup",
+    "after": "| Open architectural decision: authoritative clock, creation timestamp publication across PostgreSQL/Redis, atomic quota/capacity accounting and failure cleanup | Open question | Resolve before implementation begins, with concrete state transitions before executable tasks. Verify successful-creation time anchor, no late release, concurrent admission and reservation/orphan cleanup; no distributed atomicity is assumed. | Backend responsibility: coding agent with Product Owner review |",
+    "user_reason": "1 — Product Owner accepted the proposed risk register, responsibility assignments and due-stage triggers."
+  },
+  {
+    "decision_id": "DEC-11-deferred-3",
+    "action": "save_as_oq",
+    "before": "trusted proxy/address canonicalization, keyed IP pseudonyms, secret rotation and restart continuity",
+    "after": "| Open architectural decision: trusted proxy/address canonicalization, keyed IP pseudonyms, secret rotation and restart continuity | Open question | Resolve before implementation begins and before executable tasks. Keep the approved five-minute counter retention and 10,000-record cap without quota resets/bypass from rotation, spoofed headers or restarts. | Backend/security responsibility: coding agent with Product Owner review |",
+    "user_reason": "1 — Product Owner accepted the proposed risk register, responsibility assignments and due-stage triggers."
+  },
+  {
+    "decision_id": "DEC-11-deferred-4",
+    "action": "save_as_oq",
+    "before": "representative browser/version, hardware and network measurement profile",
+    "after": "| Open architectural decision: representative browser/version, hardware and network measurement profile | Open question | Resolve before plan-tests; preserve NFR-01/NFR-06 targets verbatim and define workload/address mix without conflating intended rate rejection with throughput failure. UI language is also selected before screens content approval. | Tech Lead / Product Owner |",
+    "user_reason": "1 — Product Owner accepted the proposed risk register, responsibility assignments and due-stage triggers."
+  },
+  {
+    "decision_id": "DEC-11-deferred-5",
+    "action": "save_as_oq",
+    "before": "lifetime slider hour-snapping with every minute available",
+    "after": "| Open architectural decision: lifetime slider hour-snapping with every minute available | Open question | Resolve before screens approval; retain default sixty minutes, all whole-minute choices through the approved maximum, mobile/keyboard operation and no silent rounding. | Designer responsibility: Product Owner and coding agent |",
+    "user_reason": "1 — Product Owner accepted the proposed risk register, responsibility assignments and due-stage triggers."
+  }
+]
