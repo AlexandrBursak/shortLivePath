@@ -73,7 +73,7 @@ Aggregate ownership: LinkLifecycle's optional ephemeral payload. Proposed versio
 | `address` | UTF-8 string | Optional input represented as empty string when absent; do not trim supplied text. |
 | `login` | UTF-8 string | Optional input represented as empty string when absent; do not trim supplied text. |
 | `credential` | UTF-8 string | Required, not whitespace-only; retain all valid submitted characters and line breaks. |
-| `code_verifier` | Encoded salted password-hard hash, or absent field | Absence means no code required. Never persist the plaintext code; malformed present verifier fails closed, not as code-disabled. Algorithm/cost/budget remain TBD. |
+| `code_verifier` | Encoded salted password-hard hash, or absent field | Absence means no code required. Never persist the plaintext code; malformed present verifier fails closed, not as code-disabled. Algorithm/cost/budget follow Accepted ADR-0006 initial values; calibration is T21. |
 | `created_at_ms` | UTC epoch-millisecond integer string | Must match the final PostgreSQL timestamp. |
 | `expires_at_ms` | UTC epoch-millisecond integer string | Must match PostgreSQL and absolute Redis expiry. Never refresh on read or verification. |
 
@@ -93,7 +93,7 @@ These key/data shapes define the design contract. Exact lease values, fencing an
 | `payload:expiry` | ZSET: lifecycle UUID member, absolute expires_at_ms score | S7 due-record index; bounded by active/uncertain payload admission. Payload TTL can remove a hash first; index cleanup must tolerate that. |
 | `limiter:expiry` | ZSET: limiter-state key or reservation handle member, maintenance deadline score | Enumerates active temporary state/reservations for bounded cleanup and cardinality accounting; no raw token, IP, code or content. |
 
-Address label means a versioned HMAC-SHA-256 of the canonical trusted-proxy-derived address using a server-held key, not an enumerable bare IP hash. Proxy policy, canonicalization and rotation/restart continuity are not yet approved. Never put example raw-IP keys from the generic Redis baseline into this feature.
+Address label means a versioned HMAC-SHA-256 of the canonical trusted-proxy-derived address using a server-held key, not an enumerable bare IP hash. Proxy trust, canonicalization, key custody and continuity policy follow Accepted ADR-0007; actual topology/configuration and T2 executable fencing remain pending. Never put example raw-IP keys from the generic Redis baseline into this feature.
 
 Pair/address state may use one packed versioned value inside its HASH, updated only by bounded server-side operations; arrays are bounded by their quota and reserved slots, not request volume. Count each pair/address record and every individual reservation toward the approved 10000 limiter-record units, even if reservations are embedded rather than separate Redis keys. The registry counts each unit exactly once; global structural index keys themselves are fixed overhead, not extra client limiter identities. Refuse before allocating a new unit at cap. The capacity-reservation map and registry must represent the same reservation, not create an uncounted parallel admission path.
 
@@ -151,12 +151,14 @@ Implementation must later add AC-citing application factories for optional/requi
 
 These are inherited SAD §11 obligations, not approval to proceed with guessed runtime parameters.
 
+Product Owner accepted [ADR-0006](adr/0006-bound-argon2id-reading-code-work-and-input.md) and [ADR-0007](adr/0007-canonicalize-trusted-addresses-and-fence-quota-resets.md) as starting values on 2026-10-22. DM-OQ-01 parameter selection and DM-OQ-05 address/continuity policy are accepted, not benchmarked or runtime-verified. T1 remains open for spec/API synchronization; T2 still owns executable fencing/time integration (DM-OQ-02…04). Benchmark calibration is [T21](tasks/benchmark-reading-code.md), after T3, and gates T20 rather than scaffolding. Actual proxy/key configuration and security/fault verification remain implementation/deployment obligations.
+
 | ID | Decision | Owner / due |
 |---|---|---|
-| DM-OQ-01 | Salted password-hard verifier (baseline Argon2), implementation, parameters, finite code/request bytes, global work/queue budgets and benchmark profile. Preserve exact code comparison and approved minimum. <!-- TBD --> | Backend/security responsibility, before executable tasks/implementation. |
+| DM-OQ-01 | Accepted initial values in ADR-0006: Argon2id v19, m=65536 KiB/t=3/p=4, salt 16 bytes/output 32 bytes, 2 concurrent calls/no queue, code <=1024 UTF-8 bytes/body <=524288 wire bytes. T1 still synchronizes spec/API; T21 calibrates after T3. | Backend/security responsibility; source sync before feature implementation, benchmark after scaffolding/before T20. |
 | DM-OQ-02 | Successful-creation anchor and cross-store final timestamp publication. PostgreSQL precedes Redis, so simply stamping metadata before hash/store work cannot prove AC-04. Define exact publication/failure transitions without extending any published/orphan deadline. <!-- TBD --> | Backend responsibility with Product Owner review, before executable tasks. |
 | DM-OQ-03 | Authoritative clock, monotonic deadlines, discontinuity detection, cleanup batch/retry budget, maintenance run identity and readiness fencing. <!-- TBD --> | Backend/frontend responsibility, before executable tasks. |
 | DM-OQ-04 | Reservation leases, generation fencing, uncertain/OOM partial-script outcomes, exact successful-quota/failure accounting and recovery reconciliation. Prove bounded cleanup and no late commit after lease release. <!-- TBD --> | Backend responsibility, before executable tasks. |
-| DM-OQ-05 | Trusted proxy list, canonical address representation, HMAC key custody/rotation and restart continuity. Redis state loss or key rotation must not silently reset active quotas; choose a fail-closed continuity policy. <!-- TBD --> | Backend/security responsibility, before executable tasks. |
+| DM-OQ-05 | Accepted policy in ADR-0007: pinned immediate proxy, canonical full address, versioned HMAC-SHA-256/32-byte deployment key, stable restart identity and fenced >=60s quiet interval on continuity loss/rotation. Actual allowlist/key provisioning and T2 fencing/time integration remain pending. | Backend/security responsibility; T1 source sync, T2 executable protocol, deployment verification before launch. |
 
 Token/digest/schema choices are resolved here; these runtime blockers are not. No independent security approval or implemented Redis protection is claimed.

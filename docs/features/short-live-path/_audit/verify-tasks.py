@@ -42,7 +42,15 @@ def main():
     require(set(model) == {'slug', 'tasks'}, 'root JSON keys')
     require(model['slug'] == 'short-live-path', 'slug')
     tasks = model['tasks']
-    require(8 <= len(tasks) <= 20, 'task count outside skill range')
+    # Product Owner explicitly requested a separate post-scaffold benchmark.
+    # Preserve T1..T20 identifiers rather than folding unrelated scopes together.
+    require(8 <= len(tasks) <= 21, 'task count outside approved range')
+    if len(tasks) == 21:
+        benchmark = next((t for t in tasks if t['id'] == 'T21'), None)
+        require(benchmark is not None and benchmark['deps'] == ['T3'],
+                'approved extra task must be the post-scaffold T21 benchmark')
+        require('T21' in next(t for t in tasks if t['id'] == 'T20')['deps'],
+                'final performance gate must require T21')
     ids = {t['id'] for t in tasks}
     require(len(ids) == len(tasks), 'duplicate task ID')
     spec = (FEATURE / 'spec.md').read_text()

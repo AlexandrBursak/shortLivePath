@@ -1,5 +1,9 @@
 # Tasks validation — short-live-path
 
+> Current acceptance-change verification: verify-tasks.py PASS for 21 tasks, all 13 ACs, exact JSON/frontmatter mirrors, acyclic DAG, inverse blocks, source quotations, context budgets and Mermaid structural lint. ADR-0006/0007 each pass structural self-check 6/6; local links resolve. git diff --check passed. No benchmark/runtime test was executed.
+
+> Historical baseline report below (20 tasks). ADR-0006/0007 were subsequently accepted as starting values by Product Owner on 2026-10-22; the benchmark moved to T21 after T3, gating T20. The current DAG has 21 tasks, 154h / 19.25 person-days. Re-run verify-tasks.py for current structural evidence. Prior no-commit/readiness statements below describe the earlier breakdown only, not this acceptance change.
+
 ## Scope and result
 
 PASS for the structural documentation checks below. Size M, route standard. This does not make the package executable: DM-OQ-01…05 remain unresolved in the unchanged upstream model and Draft contract. T1/T2 are review/decision sessions; T3…T20 are blocked and transitively require both gates, followed by a refreshed task breakdown. No implementation, security approval or production action occurred.

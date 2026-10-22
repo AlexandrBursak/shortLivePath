@@ -70,7 +70,7 @@ Fallback: if an inline is insufficient, outdated or contradicts code, open its n
 ## Data delta
 
 > | `credential` | UTF-8 string | Required, not whitespace-only; retain all valid submitted characters and line breaks. |
-> | `code_verifier` | Encoded salted password-hard hash, or absent field | Absence means no code required. Never persist the plaintext code; malformed present verifier fails closed, not as code-disabled. Algorithm/cost/budget remain TBD. |
+> | `code_verifier` | Encoded salted password-hard hash, or absent field | Absence means no code required. Never persist the plaintext code; malformed present verifier fails closed, not as code-disabled. Algorithm/cost/budget follow Accepted ADR-0006 initial values; calibration is T21. |
 >
 > — `data-model.md §Entities / Indexes, task-owned fields, verbatim` · full text: [data-model.md](../data-model.md)
 

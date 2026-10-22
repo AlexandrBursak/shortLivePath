@@ -1,7 +1,7 @@
 # Tracker — short-live-path
 
 > States: todo · in_progress · blocked · review · done. No task is implemented or approved as done.
-> T1/T2 are decision work only. All implementation tasks stay blocked until reviewed DM-OQ-01…05 closure and a refreshed breakdown. A missing source approval cannot be bypassed by editing tracker status.
+> T1/T2 are decision work only. ADR-0006/0007 initial policy is Accepted by Product Owner; T1 source synchronization and T2 protocols remain open. Implementation tasks stay blocked on those prerequisites; T21 benchmarks after T3, not before scaffolding. A missing source approval cannot be bypassed by editing tracker status.
 
 | # | Task | Layer | Owner | Estimate | Blocked by | Status |
 |---|---|---|---|---|---|---|
@@ -24,6 +24,7 @@
 | T17 | [Wire same-origin deployment and confidentiality controls](secure-compose-wiring.md) | wiring | <TBD lead> | 8h | T3, T4, T8, T9, T10, T11, T16 | blocked |
 | T18 | [Verify canary confidentiality and fault-recovery boundaries](confidentiality-recovery-audit.md) | tests | <TBD lead> | 8h | T17 | blocked |
 | T19 | [Verify all screens, exact copies and browser lifecycle safety](browser-lifecycle-e2e.md) | tests | <TBD lead> | 8h | T17 | blocked |
-| T20 | [Measure workload budgets and install aggregate synthetic checks](performance-observability.md) | tests | <TBD lead> | 8h | T18, T19 | blocked |
+| T20 | [Measure workload budgets and install aggregate synthetic checks](performance-observability.md) | tests | <TBD lead> | 8h | T18, T19, T21 | blocked |
+| T21 | [Benchmark Reading code budgets after backend scaffolding](benchmark-reading-code.md) | tests | Product Owner + coding agent | 4h | T3 | blocked |
 
-Total: 20 tasks, 150h, approximately 18.75 person-days at eight hours/day. Estimates are provisional, not a commitment; all tasks are <=8h. Overlapping file lanes serialize shared changes.
+Total: 21 tasks, 154h, approximately 19.25 person-days at eight hours/day. Estimates are provisional, not a commitment; all tasks are <=8h. Overlapping file lanes serialize shared changes.

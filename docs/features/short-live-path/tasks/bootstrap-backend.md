@@ -3,7 +3,7 @@ id: "T3"
 title: "Bootstrap the backend with executable quality gates"
 layer: "wiring"
 deps: ["T1", "T2"]
-blocks: ["T5", "T6", "T7", "T17"]
+blocks: ["T5", "T6", "T7", "T17", "T21"]
 acs: ["AC-11"]
 files_hint: ["backend/package.json", "backend/pnpm-lock.yaml", "backend/tsconfig.json", "backend/eslint.config.mjs", "backend/compose.yml", "backend/docker/", "backend/start/", "backend/config/", "backend/tests/", "backend/docs/architecture.md", "backend/app/middleware/"]
 owner: "<TBD lead>"
@@ -16,7 +16,7 @@ status: "blocked"
 
 ## Place in the sequence
 
-- Blocked by: T1 — Resolve verifier budgets and trusted-address continuity, T2 — Resolve publication, clock and reservation state machines. Blocks: T5 — Promote the staged lifecycle migration and Lucid model, T6 — Implement exact validation, token handling and bounded verification, T7 — Implement bounded Redis payload and admission transitions, T17 — Wire same-origin deployment and confidentiality controls. Wave: 2 (dependency depth, not elapsed days).
+- Blocked by: T1 — Resolve verifier budgets and trusted-address continuity, T2 — Resolve publication, clock and reservation state machines. Blocks: T5 — Promote the staged lifecycle migration and Lucid model, T6 — Implement exact validation, token handling and bounded verification, T7 — Implement bounded Redis payload and admission transitions, T17 — Wire same-origin deployment and confidentiality controls, T21 — Benchmark Reading code budgets after backend scaffolding. Wave: 2 (dependency depth, not elapsed days).
 
 - Lane: T5, T6, T7, T8, T9, T10, T11, T17, T18 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
@@ -95,7 +95,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 ## Checklist
 
-- [ ] Pin compatible AdonisJS 7/TypeScript/pnpm versions; generate only the backend skeleton and Docker-based test runner, with no public Secret endpoints yet. Work area: `backend/package.json` (and matching files_hint targets).
+- [ ] Pin compatible AdonisJS 7/TypeScript/pnpm versions; generate only the backend skeleton and Docker-based test runner, with no public Secret endpoints yet. Pin the asynchronous argon2 package/native build from Accepted ADR-0006 for the post-scaffold T21 harness; no pre-scaffold benchmark is required. Work area: `backend/package.json` (and matching files_hint targets).
 
 - [ ] Activate existing layer lint preset plus its resolver; add unit/integration scripts and typecheck/build gates, using synthetic fixtures only. Work area: `backend/pnpm-lock.yaml` (and matching files_hint targets).
 

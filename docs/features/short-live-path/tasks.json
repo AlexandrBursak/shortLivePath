@@ -16,7 +16,7 @@
         "docs/features/short-live-path/contracts/openapi.yaml"
       ],
       "file": "docs/features/short-live-path/tasks/resolve-verifier-address-policy.md",
-      "dod": "Decision review verifies DM-OQ-01/05 have concrete reviewed values, benchmark evidence and spoofing/restart/rotation test vectors; no unresolved value is marked approved."
+      "dod": "Record Accepted ADR-0006/0007 starting values and synchronize model/spec/API policy with explicit remaining T2 and deployment obligations; benchmark evidence belongs to post-scaffold T21, not this gate."
     },
     {
       "id": "T2",
@@ -477,7 +477,8 @@
       "layer": "tests",
       "deps": [
         "T18",
-        "T19"
+        "T19",
+        "T21"
       ],
       "acs": [
         "AC-01",
@@ -493,6 +494,26 @@
       ],
       "file": "docs/features/short-live-path/tasks/performance-observability.md",
       "dod": "Reproducible load report records achieved eligible throughput/p95, error/limit mix and deletion latency; synthetic/alert smoke tests pass without sensitive labels, and monthly availability remains explicitly unmeasured until a full calendar window."
+    },
+    {
+      "id": "T21",
+      "title": "Benchmark Reading code budgets after backend scaffolding",
+      "layer": "tests",
+      "deps": [
+        "T3"
+      ],
+      "acs": [
+        "AC-06",
+        "AC-07"
+      ],
+      "files_hint": [
+        "scripts/benchmark/",
+        "backend/package.json",
+        "backend/compose.yml",
+        "docs/features/short-live-path/_audit/reading-code-benchmark.md"
+      ],
+      "file": "docs/features/short-live-path/tasks/benchmark-reading-code.md",
+      "dod": "Reproducible Docker hash/verify benchmark records pinned versions, host/container limits, cold/warm latency, RSS, event-loop delay, throughput and refusals for ADR-0006; retain starting values or record a reviewed adjustment before T20."
     }
   ]
 }

@@ -2,7 +2,7 @@
 id: "T20"
 title: "Measure workload budgets and install aggregate synthetic checks"
 layer: "tests"
-deps: ["T18", "T19"]
+deps: ["T18", "T19", "T21"]
 blocks: []
 acs: ["AC-01", "AC-04", "AC-07", "AC-11"]
 files_hint: ["scripts/load/", "docker/monitoring/", "docs/operations.md", "docs/features/short-live-path/_audit/performance.md"]
@@ -16,7 +16,7 @@ status: "blocked"
 
 ## Place in the sequence
 
-- Blocked by: T18 — Verify canary confidentiality and fault-recovery boundaries, T19 — Verify all screens, exact copies and browser lifecycle safety. Blocks: none. Wave: 15 (dependency depth, not elapsed days).
+- Blocked by: T18 — Verify canary confidentiality and fault-recovery boundaries, T19 — Verify all screens, exact copies and browser lifecycle safety, T21 — Benchmark Reading code budgets after backend scaffolding. Blocks: none. Wave: 15 (dependency depth, not elapsed days).
 
 - Lane: T17 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 

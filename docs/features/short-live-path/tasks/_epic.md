@@ -12,7 +12,8 @@ Size M, route standard. This is a provisional planning package, NOT executable i
 
 - In: two decision sessions, backend/frontend foundations and reviewed design canon, staged lifecycle migration promotion, exact validation and bounded ephemeral admission, cleanup/readiness, three HTTP operations, SCR-01…05 and runtime/retention/browser/performance verification.
 - Out: accounts, per-person access, history, lost-link/code recovery, uploads, one-time reads, early deletion, external credential operations and recipient-copy revocation. Source: [spec.md](../spec.md) §3, non-goals, abridged.
-- Draft gate: DM-OQ-01…05 remain OPEN in [data-model.md](../data-model.md) §Open technical decisions. T1 resolves verifier/proxy policy; T2 resolves publication/time/admission protocols. Both require recorded review, not agent-selected guesses. All T3…T20 are blocked on these gates (transitively). Re-run tasks after upstream resolution before dispatching implementation: their snapshots/contracts/hints may change. tasks.json deliberately has no custom readiness field; the engine must follow the task-body gate and prerequisites, not infer approval from file existence.
+- Draft gate: DM-OQ-01/05 initial policy is Accepted with source synchronization pending; DM-OQ-02…04 remain OPEN in [data-model.md](../data-model.md) §Open technical decisions. T1 resolves verifier/proxy policy; T2 resolves publication/time/admission protocols. Both require recorded review, not agent-selected guesses. All T3…T21 are blocked on these gates (transitively). Re-run tasks after upstream resolution before dispatching implementation: their snapshots/contracts/hints may change. tasks.json deliberately has no custom readiness field; the engine must follow the task-body gate and prerequisites, not infer approval from file existence.
+- Accepted T1 baseline: [ADR-0006](../adr/0006-bound-argon2id-reading-code-work-and-input.md) and [ADR-0007](../adr/0007-canonicalize-trusted-addresses-and-fence-quota-resets.md), explicitly approved as starting values by Product Owner on 2026-10-22. T1 still synchronizes source contracts; T2 still supplies executable time/fencing. [T21](benchmark-reading-code.md) benchmarks after T3 and gates T20, not scaffolding. Actual proxy/key provisioning and runtime security review remain deployment/verification obligations.
 - An 8h decision session is a timebox, not a promise of approval. If unresolved, retain blocked status and split/replan rather than manufacture an accepted choice. Runtime task estimates are provisional until those protocols and actual scaffolds exist; target <=1 working day and roughly <=500 LOC per focused change.
 - Browser/version/hardware/network profile remains spec §8 / SAD §11 input required BEFORE plan-tests. T4 establishes docs/design-system.md before feature UI, matching the component gap in [screens.md](../screens.md) §Source, inherited blockers/component gap, abridged. This package does not waive either prerequisite.
 
@@ -40,6 +41,7 @@ flowchart LR
     T18["T18 Verify canary confidentiality and fault-recovery boundaries"]
     T19["T19 Verify all screens, exact copies and browser lifecycle safety"]
     T20["T20 Measure workload budgets and install aggregate synthetic checks"]
+    T21["T21 Benchmark Reading code budgets after backend scaffolding"]
     T1 --> T3
     T2 --> T3
     T1 --> T4
@@ -88,6 +90,8 @@ flowchart LR
     T17 --> T19
     T18 --> T20
     T19 --> T20
+    T21 --> T20
+    T3 --> T21
 ```
 
 DAG waves express dependency depth, not elapsed delivery days. T1/T2 share upstream artifacts and must serialize writes despite being separate roots. After the decision gate, T3 backend and T4 frontend are genuinely parallel branches; T5 metadata and T6 validation can also run independently. T9/T10 share routes; UI tasks share canon/components; overlap lanes serialize those edits. T18 and T19 operate on separate backend/security versus browser evidence. See each task's lane before parallel execution.
@@ -98,7 +102,7 @@ See [tracker.md](tracker.md) for status. Machine contract: [tasks.json](../tasks
 
 | # | Task | Layer | Blocked by | DoD (short) |
 |---|---|---|---|---|
-| T1 | [Resolve verifier budgets and trusted-address continuity](resolve-verifier-address-policy.md) | docs | — | Decision review verifies DM-OQ-01/05 have concrete reviewed values, benchmark evidence and spoofing/restart/rotation test vectors; no unresolved value is marked approved. |
+| T1 | [Resolve verifier budgets and trusted-address continuity](resolve-verifier-address-policy.md) | docs | — | Record Accepted ADR-0006/0007 starting values and synchronize model/spec/API policy with explicit remaining T2 and deployment obligations; benchmark evidence belongs to post-scaffold T21, not this gate. |
 | T2 | [Resolve publication, clock and reservation state machines](resolve-time-admission-protocol.md) | docs | — | State-machine review walks success, uncertainty, stale-owner, clock-rollback and recovery vectors against AC-04/07/10/11; all DM-OQ-02/03/04 choices are reviewed before this gate closes. |
 | T3 | [Bootstrap the backend with executable quality gates](bootstrap-backend.md) | wiring | T1, T2 | Docker backend smoke test, pnpm test/lint/typecheck/build scripts and a deliberately invalid layer-import fixture prove active gates; no sensitive endpoint serves before readiness. |
 | T4 | [Bootstrap the neutral frontend and register shared primitives](bootstrap-frontend-canon.md) | ui | T1, T2 | Neutral-shell/component tests prove no disclosure request on navigation, keyboard focus/labels/busy states at 360px, active layer lint and green Docker frontend test/lint/typecheck/build. |
@@ -117,9 +121,10 @@ See [tracker.md](tracker.md) for status. Machine contract: [tasks.json](../tasks
 | T17 | [Wire same-origin deployment and confidentiality controls](secure-compose-wiring.md) | wiring | T3, T4, T8, T9, T10, T11, T16 | Disposable Compose smoke/integration checks prove direct same-origin routing, private stores, no-store/no-referrer on all outcomes, startup fail-closed and inspected Redis persistence/noeviction configuration. |
 | T18 | [Verify canary confidentiality and fault-recovery boundaries](confidentiality-recovery-audit.md) | tests | T17 | Canary audit has zero payload/code/full-link log/backup hits; fault suites prove no late releases, <=60s deletion while cleanup executes and cleanup-before-serving, or explicitly block launch with evidence. |
 | T19 | [Verify all screens, exact copies and browser lifecycle safety](browser-lifecycle-e2e.md) | tests | T17 | AC-citing E2E/accessibility tests pass on the approved narrow/desktop browser matrix with zero app console errors, no automatic disclosure and no stale/late plaintext after lifecycle transitions. |
-| T20 | [Measure workload budgets and install aggregate synthetic checks](performance-observability.md) | tests | T18, T19 | Reproducible load report records achieved eligible throughput/p95, error/limit mix and deletion latency; synthetic/alert smoke tests pass without sensitive labels, and monthly availability remains explicitly unmeasured until a full calendar window. |
+| T20 | [Measure workload budgets and install aggregate synthetic checks](performance-observability.md) | tests | T18, T19, T21 | Reproducible load report records achieved eligible throughput/p95, error/limit mix and deletion latency; synthetic/alert smoke tests pass without sensitive labels, and monthly availability remains explicitly unmeasured until a full calendar window. |
+| T21 | [Benchmark Reading code budgets after backend scaffolding](benchmark-reading-code.md) | tests | T3 | Reproducible Docker hash/verify benchmark records pinned versions, host/container limits, cold/warm latency, RSS, event-loop delay, throughput and refusals for ADR-0006; retain starting values or record a reviewed adjustment before T20. |
 
-Total: 20 tasks, 150h = 18.75 person-days at eight hours/day. No staffed owners or overnight delivery are promised; <TBD lead> denotes a responsibility to assign.
+Total: 21 tasks, 154h = 19.25 person-days at eight hours/day. The explicit post-scaffold benchmark requested by Product Owner is a documented exception to the original 8–20-task sizing guideline; existing task IDs are preserved. No staffed owners or overnight delivery are promised; <TBD lead> denotes a responsibility to assign.
 
 ## Risks / Hard rules
 

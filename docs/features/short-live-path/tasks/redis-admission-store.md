@@ -79,7 +79,7 @@ Fallback: if an inline is insufficient, outdated or contradicts code, open its n
 > | `address` | UTF-8 string | Optional input represented as empty string when absent; do not trim supplied text. |
 > | `login` | UTF-8 string | Optional input represented as empty string when absent; do not trim supplied text. |
 > | `credential` | UTF-8 string | Required, not whitespace-only; retain all valid submitted characters and line breaks. |
-> | `code_verifier` | Encoded salted password-hard hash, or absent field | Absence means no code required. Never persist the plaintext code; malformed present verifier fails closed, not as code-disabled. Algorithm/cost/budget remain TBD. |
+> | `code_verifier` | Encoded salted password-hard hash, or absent field | Absence means no code required. Never persist the plaintext code; malformed present verifier fails closed, not as code-disabled. Algorithm/cost/budget follow Accepted ADR-0006 initial values; calibration is T21. |
 > | `created_at_ms` | UTC epoch-millisecond integer string | Must match the final PostgreSQL timestamp. |
 > | `expires_at_ms` | UTC epoch-millisecond integer string | Must match PostgreSQL and absolute Redis expiry. Never refresh on read or verification. |
 >
