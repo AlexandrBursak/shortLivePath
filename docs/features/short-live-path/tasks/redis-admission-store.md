@@ -20,7 +20,7 @@ status: "blocked"
 
 - Lane: T3 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
+Planning gate: ADR-0008/0009 select PostgreSQL-write time and simplified v1 counters. T1/T2 documentation is complete; runtime guards require implementation/tests before Secret traffic. T21 follows T3. Exact concurrent quotas are deferred backlog T22 outside tasks.json, not a scaffold/launch gate. Fix test-profile/planning inputs before dispatch.
 
 ## Why (user story)
 
@@ -45,17 +45,17 @@ This task contributes: Implement bounded Redis payload and admission transitions
 > — `sad.md §5, module boundaries, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Admission and failure semantics.** At most 25 successful creations per rolling sixty-second address window and 1000 active Secrets are allowed, with Redis maxmemory 256 MiB/noeviction and at most 10,000 limiter records including reservations. People sharing a public address share its quota.
+> **Admission and failure semantics.** Basic admission checks 25 observed successes per rolling sixty-second address window; already-admitted concurrent requests can overshoot. Keep 1000 active Secrets, Redis 256 MiB/noeviction and 10000 transient counter identities, with safe refusal rather than eviction. Address/pair state uses retained keyed pseudonyms and expires within five minutes of last relevant request. No v1 quota reservations/leases or pending-slot registry exists. Known refusal yields no link; uncertain writes do not prove absence, and every possible payload retains its original hard deadline. Immutable metadata is not deleted as rollback. Manual retry is a fresh attempt, never recovery or extension.
 >
 > — `sad.md §6, S2, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Concurrent-attempt semantics.** Each link/address pair admits no more in-flight verifications than its remaining failure allowance, so simultaneous wrong codes cannot overshoot five failed verifications in any rolling sixty-second window. Occupied in-flight slots may temporarily refuse even a correct attempt without running its hash.
+> **Concurrent-attempt semantics.** Check the basic rolling pair counter before hashing and deny when five failures are observed. Already-admitted concurrent guesses may exceed five; ADR-0009 explicitly defers exact quota reservations, leases and cross-process fencing to backlog T22. Keep atomic counter updates, no failure timestamp on rejected requests, no previous-failure reset on success, no link consumption and independent address pairs. The global two-native-call/no-queue bound remains hard, including distributed attempts; a timed-out/disconnected native call retains its permit until completion. Invalid input, capacity refusal and dependency uncertainty are not fabricated incorrect-code failures. Only a correct code plus final payload/readiness/PostgreSQL-time checks authorizes that response.
 >
 > — `sad.md §6, S4, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Retention and outage boundaries.** Active Secret/verifier data must be removed within sixty seconds of expiration while Redis can execute cleanup. The five-second tick and TTL are supporting mechanisms, not proof of that bound.
+> **Retention and outage boundaries.** The <=60-second active-record deletion bound remains mandatory while Redis can execute cleanup. TTL, a five-second tick or a fail-closed API alone is not proof; T8/T18 must test cleanup under faults and capacity. No physical RAM-erasure deadline applies during suspension/hang. Startup/recovery closes traffic, establishes current single-process ownership and safe PostgreSQL time, clears expired records and only then reopens. Continue possible Redis cleanup during PostgreSQL outage. Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
 >
 > — `sad.md §6, S7, abridged` · full text: [sad.md](../sad.md)
 
@@ -86,19 +86,18 @@ Fallback: if an inline is insufficient, outdated or contradicts code, open its n
 > — `data-model.md §Entities / Indexes, task-owned fields, verbatim` · full text: [data-model.md](../data-model.md)
 
 
-> | `creation:<address_label>:state` | Version, ordered successful-creation `(attempt_id, at_ms)` entries, pending `(attempt_id, lease_until_ms, generation)` reservations, last relevant activity | Address-scoped rolling 60-second successful quota; successes plus potentially successful in-flight reservations cannot exceed 25. No raw address. |
-> | `verification:<lifecycle_uuid>:<address_label>:state` | Version, ordered failure `(attempt_id, at_ms)` entries, pending verification reservations with owner generation/lease, last relevant activity | Link/address pair; at most five failures plus occupied slots per rolling 60 seconds. Success releases only its slot, never clears prior failures. |
-> | `capacity:reservations` | Reservation id to lifecycle id, lease deadline and owner generation | Global concurrent creation safety; count committed active payloads plus occupied/uncertain reservations against 1000, with an atomic transition to avoid double counting on commit. |
-> | `payload:expiry` | ZSET: lifecycle UUID member, absolute expires_at_ms score | S7 due-record index; bounded by active/uncertain payload admission. Payload TTL can remove a hash first; index cleanup must tolerate that. |
-> | `limiter:expiry` | ZSET: limiter-state key or reservation handle member, maintenance deadline score | Enumerates active temporary state/reservations for bounded cleanup and cardinality accounting; no raw token, IP, code or content. |
+> | `creation:<address_label>:state` | Version, bounded recent successful-creation timestamps, last relevant activity | Basic rolling 60-second check against 25 observed successes; admitted concurrent requests may overshoot. No raw address or pending slots. |
+> | `verification:<lifecycle_uuid>:<address_label>:state` | Version, bounded recent failed-verification timestamps, last relevant activity | Basic link/address check against five observed failures; admitted concurrent attempts may overshoot. Success never clears prior failures. |
+> | `payload:expiry` | ZSET: lifecycle UUID member, immutable expires_at_ms score | Due payload cleanup/capacity accounting; at most 1000 active payloads, no creation-capacity lease. |
+> | `limiter:expiry` | ZSET: bounded address/pair state handles and maintenance deadlines | Due counter cleanup and 10000-record cardinality enforcement; no raw token, IP, content or code. |
 >
 > — `data-model.md §Temporary admission state, admission keys, verbatim` · full text: [data-model.md](../data-model.md)
 
-> Count each pair/address record and every individual reservation toward the approved 10000 limiter-record units, even if reservations are embedded rather than separate Redis keys. Use absolute expiration for per-address/pair state no later than five minutes after the last relevant request, additionally bounded by link expiry for pair state. A throttled request may affect the retention deadline but must not append a failure, reserve work or move existing failure timestamps.
+> Count every active address/pair record toward the 10000 limiter-identity cap; there are no v1 quota reservation records. Use absolute expiration for per-address/pair state no later than five minutes after the last relevant request, additionally bounded by link expiry for pair state. A throttled request may affect the retention deadline but must not append a failure, reserve work or move existing failure timestamps.
 >
 > — `data-model.md §Temporary admission state, cardinality and retention, abridged` · full text: [data-model.md](../data-model.md)
 
-> The registry counts each unit exactly once; global structural index keys themselves are fixed overhead, not extra client limiter identities. Refuse before allocating a new unit at cap. The capacity-reservation map and registry must represent the same reservation, not create an uncounted parallel admission path.
+> The registry counts each counter identity once, with fixed bounded index overhead. Refuse before allocating a new identity at cap; hard payload publication capacity is checked without a long-lived reservation.
 >
 > Global expiry/registry structures have no arbitrary whole-key TTL: dropping them would bypass safety or lose cleanup handles. Delete empty structures and prune due members explicitly, including index orphans when hashes expire first.
 >
@@ -127,7 +126,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Secret requires a Reading code
 > **When** a Recipient attempts reading without the correct code
-> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; atomic concurrency controls and the bounded hash implementation remain design obligations. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
+> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; bounded hash work remains mandatory, while exact concurrent quota reservations are deferred. Basic admission uses observed failure counters; already-admitted simultaneous attempts may exceed the nominal threshold, so v1 does not promise an exact five-failure concurrent ceiling. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 
@@ -143,9 +142,9 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 ## Checklist
 
-- [ ] Implement reviewed DM-OQ-04 atomic creation/capacity and pair-verification reservation state transitions with fencing; include contracts with first implementers. Work area: `backend/app/services/ephemeral_secret_service.ts` (and matching files_hint targets).
+- [ ] Implement ADR-0009 basic bounded creation/pair counters and safe hard-cap payload publication; no quota reservations, leases or pending-slot registry in v1. Work area: `backend/app/services/ephemeral_secret_service.ts` (and matching files_hint targets).
 
-- [ ] Enforce 25 successes/60s/address, 1000 active payloads, 10000 limiter units including embedded reservations, five failures/60s/link-address pair; bound global work through T6. Work area: `backend/app/services/admission_service.ts` (and matching files_hint targets).
+- [ ] Check basic observed 25-success/address and five-failure/pair thresholds per rolling minute, explicitly allowing admitted concurrent overshoot. Enforce hard 1000 payloads/10000 counter identities/noeviction and the retained T6 work cap. Work area: `backend/app/services/admission_service.ts` (and matching files_hint targets).
 
 - [ ] Publish full versioned payload/hash/absolute TTL/expiry-index membership, retain original deadlines, validate stored records and use no raw token/address in keys. Work area: `backend/app/services/redis_scripts/` (and matching files_hint targets).
 
@@ -157,15 +156,15 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 | Case | Behaviour |
 |---|---|
-| Five pair slots occupied | Refuse without hash or appended/extended failure timestamp. |
-| Redis partial script/OOM | No assumed rollback or freed uncertain slot; reconcile under reviewed fencing. |
+| Five failures already observed for pair | Refuse without hash or appended/extended failure timestamp; already-admitted concurrent attempts may overshoot the nominal threshold. |
+| Redis partial script/OOM | No assumed rollback or speculative link; preserve the original hard deadline, hard storage cap and bounded cleanup of uncertain payload state. No quota lease/fencing protocol is required. |
 | Shared public address | Share applicable address/pair limits, never create per-person identity. |
 
 Edge-case sources: [spec.md](../spec.md) §5, AC-01, AC-07, AC-11, abridged; [sad.md](../sad.md) §6, S2, S4, S7, abridged. Decisions T1/T2 also follow [data-model.md](../data-model.md) §Open technical decisions, DM-OQ-01…05, abridged.
 
 ## Definition of Done
 
-- [ ] Real-Redis integration tests race both quotas and all caps, exercise exact rolling boundaries, short/failed/successful attempts, lease fencing, OOM/timeout partial outcomes and five-minute state retention.
+- [ ] Real-Redis integration tests prove basic rolling counters and retained histories, hard storage/cardinality/work caps, original expiry and safe OOM/timeout publication; acknowledge concurrent quota overshoot without requiring deferred reservation leases.
 
 - [ ] All inlined hard rules still hold; tests cite their AC IDs.
 

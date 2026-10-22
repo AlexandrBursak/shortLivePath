@@ -20,7 +20,7 @@ status: "blocked"
 
 - Lane: T3, T6, T9, T10 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
+Planning gate: ADR-0008/0009 select PostgreSQL-write time and simplified v1 counters. T1/T2 documentation is complete; runtime guards require implementation/tests before Secret traffic. T21 follows T3. Exact concurrent quotas are deferred backlog T22 outside tasks.json, not a scaffold/launch gate. Fix test-profile/planning inputs before dispatch.
 
 ## Why (user story)
 
@@ -45,7 +45,7 @@ This task contributes: Implement explicit disclosure with final release checks.
 > — `sad.md §5, module boundaries, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Concurrent-attempt semantics.** Each link/address pair admits no more in-flight verifications than its remaining failure allowance, so simultaneous wrong codes cannot overshoot five failed verifications in any rolling sixty-second window. Occupied in-flight slots may temporarily refuse even a correct attempt without running its hash.
+> **Concurrent-attempt semantics.** Check the basic rolling pair counter before hashing and deny when five failures are observed. Already-admitted concurrent guesses may exceed five; ADR-0009 explicitly defers exact quota reservations, leases and cross-process fencing to backlog T22. Keep atomic counter updates, no failure timestamp on rejected requests, no previous-failure reset on success, no link consumption and independent address pairs. The global two-native-call/no-queue bound remains hard, including distributed attempts; a timed-out/disconnected native call retains its permit until completion. Invalid input, capacity refusal and dependency uncertainty are not fabricated incorrect-code failures. Only a correct code plus final payload/readiness/PostgreSQL-time checks authorizes that response.
 >
 > — `sad.md §6, S4, abridged` · full text: [sad.md](../sad.md)
 
@@ -103,7 +103,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Secret requires a Reading code
 > **When** a Recipient attempts reading without the correct code
-> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; atomic concurrency controls and the bounded hash implementation remain design obligations. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
+> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; bounded hash work remains mandatory, while exact concurrent quota reservations are deferred. Basic admission uses observed failure counters; already-admitted simultaneous attempts may exceed the nominal threshold, so v1 does not promise an exact five-failure concurrent ceiling. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 
@@ -130,7 +130,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 - [ ] Implement discloseSecret as one nonstreaming authorized response; validate stored shape and metadata/payload identity/timestamps before serialization. Work area: `backend/app/services/disclose_secret_service.ts` (and matching files_hint targets).
 
-- [ ] Reserve pair/global work before code verification; missing code is not failed hash work. Wrong-code response requires confirmed failure accounting; success releases only its slot. Work area: `backend/app/controllers/disclose_secret_controller.ts` (and matching files_hint targets).
+- [ ] Check the basic observed pair counter and acquire the shared hard work permit before code verification. Missing code is not failed hash work. Wrong-code response requires confirmed actual-failure accounting; success never clears prior failures. Exact quota reservations are deferred. Work area: `backend/app/controllers/disclose_secret_controller.ts` (and matching files_hint targets).
 
 - [ ] Immediately after asynchronous work and before actual response release recheck readiness/current generation, payload consistency and strict service now < expires_at; do not rely on earlier service checks. Work area: `backend/app/validators/disclose_secret.ts` (and matching files_hint targets).
 
@@ -143,14 +143,14 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 | Case | Behaviour |
 |---|---|
 | Correct code finishes at expiry | 410; no content released. |
-| Successful code after prior failures | Release own reservation; never clear previous failures. |
+| Successful code after prior failures | Release only the native-work permit when computation ends; never clear previous failures. |
 | Accounting uncertain | 503, not code_incorrect or a successful disclosure. |
 
 Edge-case sources: [spec.md](../spec.md) §5, AC-03, AC-07, AC-08, AC-10, abridged; [sad.md](../sad.md) §6, S4, abridged. Decisions T1/T2 also follow [data-model.md](../data-model.md) §Open technical decisions, DM-OQ-01…05, abridged.
 
 ## Definition of Done
 
-- [ ] discloseSecret tests cover all 200/403/409/410/422/429/503 outcomes, parallel five-failure reservations, repeat readers and delayed correct verification/readiness changes at final release.
+- [ ] discloseSecret tests cover safe HTTP outcomes, basic observed five-failure checks with acknowledged concurrent overshoot, hard global work admission, repeat readers and final PostgreSQL-time/readiness checks after asynchronous verification.
 
 - [ ] All inlined hard rules still hold; tests cite their AC IDs.
 

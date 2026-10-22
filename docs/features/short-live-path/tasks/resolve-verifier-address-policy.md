@@ -20,7 +20,7 @@ status: "done"
 
 - Lane: T2 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
+Planning gate: ADR-0008/0009 select PostgreSQL-write time and simplified v1 counters. T1/T2 documentation is complete; runtime guards require implementation/tests before Secret traffic. T21 follows T3. Exact concurrent quotas are deferred backlog T22 outside tasks.json, not a scaffold/launch gate. Fix test-profile/planning inputs before dispatch.
 
 ## Why (user story)
 
@@ -31,7 +31,7 @@ Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0
 > — `spec.md §4, US-03, verbatim` · full text: [spec.md](../spec.md)
 
 
-This task contributes: Resolve verifier budgets and trusted-address continuity. ADR-0006/0007 are Accepted starting values by explicit Product Owner approval on 2026-10-22; T1 documentation synchronization is complete; see _audit/api-validation.md for executed structural evidence. No independent security review is claimed. Benchmark calibration is T21 after T3, not a T1 completion prerequisite. Actual topology/key configuration and fault verification remain implementation/deployment work.
+This task contributes: Resolve verifier budgets and trusted-address continuity. ADR-0006/0007 were accepted as starting values and are now historical, superseded by ADR-0009 which retains the non-quota protections; T1 documentation synchronization is complete; see _audit/api-validation.md for executed structural evidence. No independent security review is claimed. Benchmark calibration is T21 after T3, not a T1 completion prerequisite. Actual topology/key configuration and fault verification remain implementation/deployment work.
 
 ## Inlined context
 
@@ -45,7 +45,7 @@ This task contributes: Resolve verifier budgets and trusted-address continuity. 
 > — `sad.md §5, module boundaries, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Concurrent-attempt semantics.** Each link/address pair admits no more in-flight verifications than its remaining failure allowance, so simultaneous wrong codes cannot overshoot five failed verifications in any rolling sixty-second window. Occupied in-flight slots may temporarily refuse even a correct attempt without running its hash.
+> **Concurrent-attempt semantics.** Check the basic rolling pair counter before hashing and deny when five failures are observed. Already-admitted concurrent guesses may exceed five; ADR-0009 explicitly defers exact quota reservations, leases and cross-process fencing to backlog T22. Keep atomic counter updates, no failure timestamp on rejected requests, no previous-failure reset on success, no link consumption and independent address pairs. The global two-native-call/no-queue bound remains hard, including distributed attempts; a timed-out/disconnected native call retains its permit until completion. Invalid input, capacity refusal and dependency uncertainty are not fabricated incorrect-code failures. Only a correct code plus final payload/readiness/PostgreSQL-time checks authorizes that response.
 >
 > — `sad.md §6, S4, abridged` · full text: [sad.md](../sad.md)
 
@@ -65,7 +65,7 @@ This task contributes: Resolve verifier budgets and trusted-address continuity. 
 > — `data-model.md §Open technical decisions, DM-OQ-01, abridged` · full text: [data-model.md](../data-model.md)
 
 
-> | DM-OQ-05 | Accepted policy in ADR-0007: pinned immediate proxy, canonical full address, versioned HMAC-SHA-256/32-byte deployment key, stable restart identity and fenced >=60s quiet interval on continuity loss/rotation. Actual allowlist/key provisioning and T2 fencing/time integration remain pending. | Backend/security responsibility; T1 source sync complete; T2 executable protocol, deployment verification before launch. |
+> | DM-OQ-05 | Accepted policy in ADR-0007: pinned immediate proxy, canonical full address, versioned HMAC-SHA-256/32-byte deployment key, stable restart identity and fenced >=60s quiet interval on continuity loss/rotation. Actual allowlist/key provisioning and runtime time/recovery verification remain pending; exact quota fencing is deferred. | Backend/security responsibility; T1 source sync complete; runtime time/recovery and deployment verification before launch. |
 >
 > — `data-model.md §Open technical decisions, DM-OQ-05, abridged` · full text: [data-model.md](../data-model.md)
 
@@ -110,7 +110,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Secret requires a Reading code
 > **When** a Recipient attempts reading without the correct code
-> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; atomic concurrency controls and the bounded hash implementation remain design obligations. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
+> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; bounded hash work remains mandatory, while exact concurrent quota reservations are deferred. Basic admission uses observed failure counters; already-admitted simultaneous attempts may exceed the nominal threshold, so v1 does not promise an exact five-failure concurrent ceiling. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 

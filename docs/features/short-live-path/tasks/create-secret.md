@@ -20,7 +20,7 @@ status: "blocked"
 
 - Lane: T3, T6, T10, T11 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
+Planning gate: ADR-0008/0009 select PostgreSQL-write time and simplified v1 counters. T1/T2 documentation is complete; runtime guards require implementation/tests before Secret traffic. T21 follows T3. Exact concurrent quotas are deferred backlog T22 outside tasks.json, not a scaffold/launch gate. Fix test-profile/planning inputs before dispatch.
 
 ## Why (user story)
 
@@ -45,12 +45,12 @@ This task contributes: Implement confirmed creation and its HTTP boundary.
 > — `sad.md §5, module boundaries, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Timing and scope obligations.** Expiration is the selected duration after successful creation, not form entry or initial reservation. The messages above state the approved cross-store order, not a concrete timestamp-publication algorithm: §11 still requires the exact creation-time anchor, final timestamp publication and atomic successful-quota accounting to be resolved and tested before implementation.
+> **Timing and scope obligations.** Expiration is the chosen interval after the PostgreSQL lifecycle INSERT (ADR-0008), not after final confirmation. Prepare the optional verifier before INSERT; sample database-derived millisecond timestamps once and never republish them. Commit/Redis/response delay consumes lifetime; no one-second release grace is implied. Lost confirmation and uncertain writes produce no link, auto-retry or deadline extension. Exact concurrent quota reservation is deferred by ADR-0009; input/hash bounds remain mandatory.
 >
 > — `sad.md §6, S1, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Admission and failure semantics.** At most 25 successful creations per rolling sixty-second address window and 1000 active Secrets are allowed, with Redis maxmemory 256 MiB/noeviction and at most 10,000 limiter records including reservations. People sharing a public address share its quota.
+> **Admission and failure semantics.** Basic admission checks 25 observed successes per rolling sixty-second address window; already-admitted concurrent requests can overshoot. Keep 1000 active Secrets, Redis 256 MiB/noeviction and 10000 transient counter identities, with safe refusal rather than eviction. Address/pair state uses retained keyed pseudonyms and expires within five minutes of last relevant request. No v1 quota reservations/leases or pending-slot registry exists. Known refusal yields no link; uncertain writes do not prove absence, and every possible payload retains its original hard deadline. Immutable metadata is not deleted as rollback. Manual retry is a fresh attempt, never recovery or extension.
 >
 > — `sad.md §6, S2, abridged` · full text: [sad.md](../sad.md)
 
@@ -76,7 +76,7 @@ Fallback: if an inline is insufficient, outdated or contradicts code, open its n
 
 > | `id` | uuid | PK, NOT NULL | Service-generated UUID v4; internal handle for the Redis payload. Not an authorization capability or public lookup endpoint. |
 > | `token_digest` | bytea | NOT NULL, UNIQUE, exactly 32 bytes | SHA-256 over the decoded 32 random token bytes, not over an arbitrary textual spelling. |
-> | `created_at` | timestamptz | NOT NULL, finite, no DEFAULT | Service-established successful-creation timestamp; publication algorithm remains a blocker below. |
+> | `created_at` | timestamptz | NOT NULL, finite, no DEFAULT | PostgreSQL clock sampled once at lifecycle INSERT, millisecond-aligned; commit/Redis/response delay consumes lifetime (ADR-0008). |
 > | `expires_at` | timestamptz | NOT NULL, finite, no DEFAULT | Exactly created_at plus the selected integer minutes, 1–1440. UTC instants; millisecond-aligned service values allow exact Redis/DTO mapping. |
 > | `code_verifier` | Encoded salted password-hard hash, or absent field | Absence means no code required. Never persist the plaintext code; malformed present verifier fails closed, not as code-disabled. Algorithm/cost/budget follow Accepted ADR-0006 initial values; calibration is T21. |
 >
@@ -123,7 +123,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Sender is creating a Secret
 > **When** creation succeeds with the default lifetime or a chosen whole number of minutes from 1 to 1440
-> **Then** expiration is one hour after successful creation by default, or the chosen duration after successful creation. The service establishes the creation and expiration times; changing the Recipient device clock must not extend the sharing window. The Sender can select every whole-minute value in this range with hour-snapping assistance; selecting a non-hour duration remains possible. The exact interaction is owned by screens and must not silently remove minute-level choices. The confirmation and reading experiences show a visible countdown of remaining lifetime based on service-established expiration and service time; changing the device wall clock does not extend access. Countdown display does not replace server-side expiration enforcement.
+> **Then** expiration is one hour after the service records creation by default, or the chosen duration after that recorded creation time. Confirmation and delivery delay consume part of the chosen duration and do not restart or extend it. The service establishes the creation and expiration times; changing the Recipient device clock must not extend the sharing window. The Sender can select every whole-minute value in this range with hour-snapping assistance; selecting a non-hour duration remains possible. The exact interaction is owned by screens and must not silently remove minute-level choices. The confirmation and reading experiences show a visible countdown of remaining lifetime based on service-established expiration and service time; changing the device wall clock does not extend access. Countdown display does not replace server-side expiration enforcement.
 >
 > — `spec.md §5, AC-04, verbatim` · full text: [spec.md](../spec.md)
 
@@ -150,9 +150,9 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 - [ ] Thin controller validates, calls service and serializes the exact createSecret contract; service owns DB/Redis/hash coordination. Work area: `backend/app/services/create_secret_service.ts` (and matching files_hint targets).
 
-- [ ] Use reviewed successful-creation timestamp publication, reserve before expensive work, confirm PostgreSQL before payload publication and return 201 only after stores/accounting/readiness are confirmed. Work area: `backend/app/controllers/create_secret_controller.ts` (and matching files_hint targets).
+- [ ] Prepare the optional verifier within hard work admission, then sample PostgreSQL creation/expiration once in the lifecycle INSERT. Confirm metadata before payload publication with the original deadline; return 201 only after final time/readiness/store confirmation. Work area: `backend/app/controllers/create_secret_controller.ts` (and matching files_hint targets).
 
-- [ ] Definitive PG failure stops before payload; uncertain outcomes issue no confirmed link and never auto-retry. Preserve possible metadata/orphan original deadline and bounded reservation ownership. Work area: `backend/app/validators/create_secret.ts` (and matching files_hint targets).
+- [ ] Definitive PG failure stops before payload; uncertain outcomes issue no confirmed link and never auto-retry. Preserve possible metadata/orphan original deadline with bounded cleanup; no quota reservation protocol is required. Work area: `backend/app/validators/create_secret.ts` (and matching files_hint targets).
 
 - [ ] Install only this route with required no-store/no-referrer and safe error envelopes; no code/payload echo, Idempotency-Key guarantee or recovery surface. Work area: `backend/start/routes.ts` (and matching files_hint targets).
 
@@ -169,7 +169,7 @@ Edge-case sources: [spec.md](../spec.md) §5, AC-01, AC-02, AC-04, AC-05, AC-06,
 
 ## Definition of Done
 
-- [ ] createSecret contract/integration tests assert 201/422/429/503, exact service-established successful timestamps, no link on uncertain commits, 25-success rolling quota and orphan nonextension.
+- [ ] createSecret contract/integration tests assert safe outcomes, fixed PostgreSQL-INSERT creation/expiration timestamps, shortened usable lifetime, no link on uncertain writes, basic observed 25-success checks and orphan nonextension.
 
 - [ ] All inlined hard rules still hold; tests cite their AC IDs.
 

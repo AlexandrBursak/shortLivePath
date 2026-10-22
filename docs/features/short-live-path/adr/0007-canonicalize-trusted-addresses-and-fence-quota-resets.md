@@ -1,5 +1,5 @@
 ---
-status: Accepted
+status: Superseded by 0009
 owner: "Tech Lead"
 reviewers: ["Product Owner"]
 updated_at: "2026-10-22"
@@ -9,9 +9,11 @@ ticket: null
 
 # 0007 — Canonicalize trusted addresses and fence quota resets
 
-- **Status:** Accepted
+- **Status:** Superseded by 0009
 - **Date:** 2026-10-22
 - **Deciders:** Product Owner explicitly accepted ADR-0007 and ADR-0006 as starting values on 2026-10-22. Actual proxy addresses and runtime key material remain deployment inputs; no independent security review or executed fault-test approval is claimed.
+
+Superseded by [ADR-0009](0009-keep-basic-limits-and-defer-exact-concurrent-quotas.md) on 2026-10-22. Original decision text below is historical: ADR-0009 inherits the non-quota controls and explicitly defers exact concurrent quota reservations.
 
 ## Context
 

@@ -9,7 +9,7 @@ files_hint: ["backend/package.json", "backend/pnpm-lock.yaml", "backend/tsconfig
 owner: "<TBD lead>"
 estimate: "6h"
 context_budget: "M"
-status: "blocked"
+status: "todo"
 ---
 
 # T3 — Bootstrap the backend with executable quality gates
@@ -20,7 +20,7 @@ status: "blocked"
 
 - Lane: T5, T6, T7, T8, T9, T10, T11, T17, T18 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
+Planning gate: ADR-0008/0009 select PostgreSQL-write time and simplified v1 counters. T1/T2 documentation is complete; runtime guards require implementation/tests before Secret traffic. T21 follows T3. Exact concurrent quotas are deferred backlog T22 outside tasks.json, not a scaffold/launch gate. Fix test-profile/planning inputs before dispatch.
 
 ## Why (user story)
 
@@ -45,7 +45,7 @@ This task contributes: Bootstrap the backend with executable quality gates.
 > — `sad.md §5, module boundaries, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Retention and outage boundaries.** Active Secret/verifier data must be removed within sixty seconds of expiration while Redis can execute cleanup. The five-second tick and TTL are supporting mechanisms, not proof of that bound.
+> **Retention and outage boundaries.** The <=60-second active-record deletion bound remains mandatory while Redis can execute cleanup. TTL, a five-second tick or a fail-closed API alone is not proof; T8/T18 must test cleanup under faults and capacity. No physical RAM-erasure deadline applies during suspension/hang. Startup/recovery closes traffic, establishes current single-process ownership and safe PostgreSQL time, clears expired records and only then reopens. Continue possible Redis cleanup during PostgreSQL outage. Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
 >
 > — `sad.md §6, S7, abridged` · full text: [sad.md](../sad.md)
 

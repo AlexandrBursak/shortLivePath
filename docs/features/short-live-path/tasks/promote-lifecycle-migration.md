@@ -20,7 +20,7 @@ status: "blocked"
 
 - Lane: T3 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
+Planning gate: ADR-0008/0009 select PostgreSQL-write time and simplified v1 counters. T1/T2 documentation is complete; runtime guards require implementation/tests before Secret traffic. T21 follows T3. Exact concurrent quotas are deferred backlog T22 outside tasks.json, not a scaffold/launch gate. Fix test-profile/planning inputs before dispatch.
 
 ## Why (user story)
 
@@ -66,7 +66,7 @@ Fallback: if an inline is insufficient, outdated or contradicts code, open its n
 
 > | `id` | uuid | PK, NOT NULL | Service-generated UUID v4; internal handle for the Redis payload. Not an authorization capability or public lookup endpoint. |
 > | `token_digest` | bytea | NOT NULL, UNIQUE, exactly 32 bytes | SHA-256 over the decoded 32 random token bytes, not over an arbitrary textual spelling. |
-> | `created_at` | timestamptz | NOT NULL, finite, no DEFAULT | Service-established successful-creation timestamp; publication algorithm remains a blocker below. |
+> | `created_at` | timestamptz | NOT NULL, finite, no DEFAULT | PostgreSQL clock sampled once at lifecycle INSERT, millisecond-aligned; commit/Redis/response delay consumes lifetime (ADR-0008). |
 > | `expires_at` | timestamptz | NOT NULL, finite, no DEFAULT | Exactly created_at plus the selected integer minutes, 1–1440. UTC instants; millisecond-aligned service values allow exact Redis/DTO mapping. |
 >
 > — `data-model.md §Entities / Indexes, task-owned fields, verbatim` · full text: [data-model.md](../data-model.md)

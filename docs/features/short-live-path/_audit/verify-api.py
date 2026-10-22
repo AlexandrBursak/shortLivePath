@@ -183,7 +183,14 @@ checks.append('Canonical token padding-bit/32-byte encoding checks: PASS (256 en
 assert schemas['CreateSecretRequest']['x-max-aggregate-utf8-bytes'] == 65536
 assert schemas['CreateSecretRequest']['x-non-whitespace-fields'] == ['credential']
 assert schemas['CreateSecretRequest']['properties']['lifetime_minutes']['default'] == 60
-assert set(api['x-unresolved']) == {'DM-OQ-02', 'DM-OQ-03', 'DM-OQ-04'}
+assert api['x-unresolved'] == []
+assert len(api['x-deferred']) == 1 and 'T22' in api['x-deferred'][0]
+assert 'PostgreSQL' in api['x-project-decisions']['creation-time']
+assert 'may overshoot' in api['x-project-decisions']['quota-accuracy']
+for op in operations:
+    for response in op['responses'].values():
+        assert 'in-flight address slots' not in response['description']
+        assert 'reservations occupy' not in response['description']
 assert schemas['ReadingCode']['x-max-utf8-bytes'] == 1024
 assert schemas['ReadingCode']['maxLength'] == 1024
 assert 'x-unresolved' not in schemas['ReadingCode']
@@ -216,8 +223,16 @@ events = (ROOT / 'contracts/events.md').read_text()
 event_rows = re.findall(r'^\| (.*?) \| (.*?) \|$', events, re.M)[1:]
 assert len(event_rows) == 12
 assert 'no published domain events' in events
-assert 'N,' in events and 'unresolved' in events
-checks.append('Declared semantic constraints, three T2 blockers and twelve S7 maintenance branches: PASS')
+assert 'N,' in events and 'T22' in events
+# Regression guard for the review's stale active reservation/T2 ownership findings.
+assert 'T2 still defines executable time/fencing mechanics' not in events
+assert 'T2 must pin the executable recovery protocol' not in (ROOT / 'sad.md').read_text()
+quota_task = (ROOT / 'tasks/redis-admission-store.md').read_text()
+assert 'Five pair slots occupied' not in quota_task
+assert 'freed uncertain slot; reconcile under reviewed fencing' not in quota_task
+assert 'T8/T12 implement and verify' in events
+checks.append('Review regression guards: deferred quota scope and T8/T12 runtime ownership: PASS')
+checks.append('Declared semantic constraints, approved PostgreSQL baseline, deferred T22 and twelve S7 maintenance branches: PASS')
 
 summary = '# API validation — short-live-path\n\n'
 summary += '## Results\n\n' + '\n'.join('- ' + check for check in checks) + '\n\n'
@@ -231,13 +246,13 @@ OpenAPI/spec/schema validation and synthetic documentation examples only. No app
 no tests of running HTTP handlers, byte/whitespace/Unicode validators, body admission, PostgreSQL,
 Redis, clocks, cleanup latency, browser clipboard/countdown, proxy behavior, backups, logging,
 security or performance have been executed. Semantic requirements not expressible in JSON Schema
-remain service/browser/infra tests. T1 initial policy is synchronized. DM-OQ-02/03/04 still block finalization; T21 calibration and T17/T18 proxy/security verification remain mandatory.
+remain service/browser/infra tests. ADR-0008/0009 source policy is approved and synchronized. Exact concurrent quotas are deferred backlog T22 outside the v1 DAG. T7/T8/T12 runtime safety, T21 calibration and T17/T18 proxy/security verification remain mandatory before the relevant sensitive traffic/launch gates.
 
 This verifier is the author-side structural check, not independent security approval.
 Spectral is not installed/wired as a repository check target because no package/check target
 exists. openapi-spec-validator and jsonschema ran in an isolated uv environment without adding
-application dependencies or a manifest. The source spec was synchronized to Accepted ADR-0006/0007; migrations are unchanged.
+application dependencies or a manifest. The source spec was synchronized to current Accepted ADR-0008/0009; migrations are unchanged.
 '''
 (ROOT / '_audit/api-validation.md').write_text(summary)
 print('\n'.join(checks))
-print('Overall: PASS (structural checks only; draft finalization blockers remain).')
+print('Overall: PASS (structural checks only; runtime/security verification remains unperformed).')

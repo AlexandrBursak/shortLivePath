@@ -6,9 +6,9 @@ Size M, route standard (read from .size/.route). HTTP/REST backend-service is de
 web-frontend in SAD frontmatter. data-model.md, sad.md and spec.md are present. No application,
 manifest, live error registry or application check target exists in this repo; the existing contract is reconciled in place.
 
-DRAFT — wire projection is source-aligned subject to the explicitly inherited DM-OQ blockers below.
+DRAFT — wire projection is source-aligned with the approved ADR-0008/0009 policy and explicit runtime/deferred obligations below.
 No implementation, security, performance, retention or runtime correctness is claimed by contract linting.
-T1 source synchronization applies Accepted ADR-0006/0007 to spec, model, SAD and this contract. Migrations are unchanged. No runtime verification or new commit is claimed by this report.
+Source synchronization applies current ADR-0008/0009 to spec, model, SAD and this contract; ADR-0006/0007 are historical, with their non-quota protections explicitly inherited. Migrations are unchanged. No runtime verification or new commit is claimed by this report.
 
 ## Resolved conventions
 
@@ -45,7 +45,7 @@ verifier, reservations, address labels and created_at stay off the public interf
 | `createSecret.request.credential` | data-model.md §ephemeral_secret.credential; spec AC-02/AC-03 | high |
 | `createSecret.request.lifetime_minutes` | data-model.md §link_lifecycles.expires_at - created_at; spec AC-04/AC-05 | high |
 | `createSecret.request.login` | data-model.md §ephemeral_secret.login; spec AC-02/AC-03 | high |
-| `createSecret.request.reading_code.allOf[0]` | spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0006 input budget | high |
+| `createSecret.request.reading_code.allOf[0]` | spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0009 retained input budget | high |
 | `createSecret.response.201.data.expires_at` | data-model.md §link_lifecycles.expires_at; §ephemeral_secret.expires_at_ms | high |
 | `createSecret.response.201.data.share_url` | data-model.md §Token and digest representation; sad.md S1; spec AC-01/AC-06 | medium |
 | `createSecret.response.201.header.Cache-Control` | sad.md §8 cache/browser headers | high |
@@ -77,7 +77,7 @@ verifier, reservations, address labels and created_at stay off the public interf
 | `createSecret.response.503.header.Cache-Control` | sad.md §8 cache/browser headers | high |
 | `createSecret.response.503.header.Referrer-Policy` | sad.md §8 cache/browser headers | high |
 | `discloseSecret.path.token` | data-model.md §Token and digest representation | high |
-| `discloseSecret.request.reading_code` | spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0006 input budget | high |
+| `discloseSecret.request.reading_code` | spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0009 retained input budget | high |
 | `discloseSecret.response.200.data.expires_at` | data-model.md §link_lifecycles.expires_at; §ephemeral_secret.expires_at_ms | high |
 | `discloseSecret.response.200.data.secret.address` | data-model.md §ephemeral_secret.address; spec AC-02/AC-03 | high |
 | `discloseSecret.response.200.data.secret.credential` | data-model.md §ephemeral_secret.credential; spec AC-02/AC-03 | high |
@@ -177,7 +177,7 @@ verifier, reservations, address labels and created_at stay off the public interf
 | AC-04 | createSecret 201/default 60; status/disclosure service_time + expires_at | S6 conservative monotonic timing; minute-level slider |
 | AC-05 | createSecret 422; integer lifetime bounds | Explain bounds without clamping |
 | AC-06 | createSecret 201/422/413/415; discloseSecret 200/403/422/413/415 | Local generator; nonblocking weak-code advice; no code in URL |
-| AC-07 | discloseSecret 403/422/429/503; transport 413/415 before code work | Pair reservations and salted verifier; no consuming/rebinding link |
+| AC-07 | discloseSecret 403/422/429/503; transport 413/415 before code work | Basic observed pair checks, acknowledged concurrent overshoot, hard global work bound and salted verifier; no consuming/rebinding link |
 | AC-08 | getSecretStatus 200; discloseSecret 200 | Initial/repeat neutral page; no automatic Show or consumption |
 | AC-09 | getSecretStatus 200 unknown/expired/early_unavailable; discloseSecret 409/410 | Original browser URL shows state, never a missing-page experience |
 | AC-10 | discloseSecret 410/503 final check; status revalidation | S5/S6 late-response discard, offline hide, concealed resume |
@@ -195,7 +195,7 @@ API responses support but do not themselves prove browser-only or infrastructure
 | S1 code disabled/chosen/generated | optional reading_code; local generator, no generator endpoint |
 | S1 content/lifetime/code invalid | createSecret 422 invalid_request |
 | S1/S2 ready/clock/dependency unsafe | createSecret 503 service_unavailable |
-| S1/S2 address quota/reservations occupied | createSecret 429 creation_limited |
+| S1/S2 observed creation threshold reached | createSecret 429 creation_limited |
 | S2 payload/limiter/memory/work capacity | createSecret 503 capacity_unavailable |
 | S1/S2 admission/preparation/metadata/payload/accounting failure or uncertainty | createSecret 503 service_unavailable; no link, no automatic retry |
 | S1/S2 final eligibility unsafe | createSecret 503; no confirmed link even if orphan exists |
@@ -215,9 +215,9 @@ API responses support but do not themselves prove browser-only or infrastructure
 | S4 malformed/unknown token | 409 link_unavailable; malformed stops before lookup |
 | S4 no required code | authorize only current request; final checks still mandatory |
 | S4 required code absent/incorrect with confirmed accounting | 403 code_required / code_incorrect, no payload |
-| S4 pair failures or in-flight slots occupy allowance | 429 verification_limited, no hash/window extension |
+| S4 observed pair failure threshold reached | 429 verification_limited, no hash/window extension |
 | S4 limiter/hash-work capacity exhausted | 503 capacity_unavailable, no expensive work or protection bypass |
-| S4 reservation uncertainty, verifier internal error, accounting/completion failure | 503 service_unavailable, no fabricated wrong-code result |
+| S4 basic counter uncertainty, verifier internal error or completion failure | 503 service_unavailable, no fabricated wrong-code result |
 | S4 correct code and confirmed completion | recheck payload/readiness/clock then 200/409/410/503, no durable authorization |
 | S4 final eligible bounded nonstreaming release | 200 exact Secret + original expires_at + service timing |
 | S5 invalid/stale/concealed/late response | UI discards, not another HTTP endpoint/status |
@@ -237,15 +237,15 @@ an HTTP 404 web page. Intermediaries must apply the same noncacheable/sanitized 
 
 ## Inherited open decisions — finalization gate
 
-T1 is synchronized from explicitly Accepted ADR-0006/0007. Remaining T2 decisions below are not waived. No runtime correctness follows from source synchronization.
+ADR-0008/0009 approve the reduced v1 baseline; exact quota reservations are explicitly deferred, not a hidden scaffold/launch gate. No runtime correctness follows from source synchronization.
 
 | ID | Contract impact | Owner / due |
 |---|---|---|
 | DM-OQ-01 | RESOLVED initial policy: ADR-0006 code/work/body budgets and safe 413/415/422/503 projection synchronized. No runtime limit or performance has been measured. | Calibration T21 after T3; final performance T20 |
-| DM-OQ-02 | Successful-creation anchor and final timestamps across PostgreSQL then Redis. Matching DTO timestamps alone cannot prove exact lifetime from successful creation. | Backend with Product Owner (data-model/design), before contract finalization and executable tasks |
-| DM-OQ-03 | Safe authoritative/monotonic timing, transit-aware client deadline, discontinuity detection, cleanup batches/retry budgets and current-run fencing. | Backend/frontend (design/sequences), before contract finalization and executable tasks |
-| DM-OQ-04 | Admission leases/fencing, bounded uncertain/OOM accounting and recovery; no late commit after releasing slots. | Backend (data-model/design), before contract finalization and executable tasks |
-| DM-OQ-05 | RESOLVED policy: ADR-0007 trusted-address/HMAC/quiet-interval semantics synchronized; no public IP/header fields. Concrete executable fencing remains T2 and actual proxy/key configuration remains deployment work. | T2 integration; T17/T18 configuration/security verification before launch |
+| DM-OQ-02 | RESOLVED by ADR-0008: lifetime starts at PostgreSQL INSERT; confirmation delay reduces usable time, no final timestamp publication. | T9 implements/tests metadata/payload/confirmation failure vectors |
+| DM-OQ-03 | APPROVED time/recovery policy in ADR-0008: PostgreSQL authority, final release check, conservative browser deadline, unsafe-clock closure and cleanup before serving. | T8/T12/T18 runtime verification before sensitive traffic/launch |
+| DM-OQ-04 | DEFERRED by ADR-0009: exact concurrent quota reservations/leases. Basic counters and hard resource/expiry/privacy controls remain. | Backlog T22 outside tasks.json; revisit before replicas or upon actual abuse/concurrency need |
+| DM-OQ-05 | RESOLVED policy: ADR-0007 trusted-address/HMAC/quiet-interval semantics synchronized; no public IP/header fields. Current-process time/recovery verification and actual proxy/key configuration remain implementation/deployment work. | T8/T12 runtime integration; T17/T18 configuration/security verification before launch |
 
 Browser/network test profile remains due before plan-tests and UI language/slider behavior before
 screens approval, as already recorded in SAD §11/spec §8. These do not justify fabricated API fields.
@@ -258,4 +258,4 @@ source story/AC coverage and exact field-origin table projection, exercises sche
 checks the maintenance branch table. Read `_audit/api-validation.md` for actual execution results.
 This is structural documentation verification, not an application/security/performance test.
 
-Suggested follow-up: resolve T2, then refresh the affected task/test-planning snapshots. T1 documentation completion does not unblock T3 while T2 is unresolved.
+Suggested follow-up: refresh test-planning/profile inputs, then scaffold T3/T4. T21 follows T3. Deferred backlog T22 must not block the initial implementation or launch.

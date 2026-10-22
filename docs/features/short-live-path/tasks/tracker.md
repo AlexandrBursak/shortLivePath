@@ -1,14 +1,14 @@
 # Tracker — short-live-path
 
-> States: todo · in_progress · blocked · review · done. T1 is done for documentation/policy synchronization only; no application task is implemented.
-> T1/T2 are decision work only. ADR-0006/0007 initial policy is Accepted by Product Owner; T1 source synchronization is complete; T2 protocols remain open and still block implementation; T21 benchmarks after T3, not before scaffolding. A missing source approval cannot be bypassed by editing tracker status.
+> States: todo · in_progress · blocked · review · done. T1/T2 are done for approved documentation/policy only; no application task is implemented.
+> T1/T2 are decision work only. Current ADR-0008/0009 policy is Accepted by Product Owner; ADR-0008/0009 resolve the creation/time baseline and explicitly defer exact quota reservations; T21 benchmarks after T3, not before scaffolding. A missing source approval cannot be bypassed by editing tracker status.
 
 | # | Task | Layer | Owner | Estimate | Blocked by | Status |
 |---|---|---|---|---|---|---|
 | T1 | [Resolve verifier budgets and trusted-address continuity](resolve-verifier-address-policy.md) | docs | Product Owner + coding agent | 8h | — | done |
-| T2 | [Resolve publication, clock and reservation state machines](resolve-time-admission-protocol.md) | docs | Product Owner + coding agent | 8h | — | todo |
-| T3 | [Bootstrap the backend with executable quality gates](bootstrap-backend.md) | wiring | <TBD lead> | 6h | T1, T2 | blocked |
-| T4 | [Bootstrap the neutral frontend and register shared primitives](bootstrap-frontend-canon.md) | ui | <TBD lead> | 8h | T1, T2 | blocked |
+| T2 | [Resolve publication, clock and reservation state machines](resolve-time-admission-protocol.md) | docs | Product Owner + coding agent | 8h | — | done |
+| T3 | [Bootstrap the backend with executable quality gates](bootstrap-backend.md) | wiring | <TBD lead> | 6h | T1, T2 | todo |
+| T4 | [Bootstrap the neutral frontend and register shared primitives](bootstrap-frontend-canon.md) | ui | <TBD lead> | 8h | T1, T2 | todo |
 | T5 | [Promote the staged lifecycle migration and Lucid model](promote-lifecycle-migration.md) | migration | <TBD lead> | 4h | T3 | blocked |
 | T6 | [Implement exact validation, token handling and bounded verification](validate-and-hash.md) | domain | <TBD lead> | 8h | T3 | blocked |
 | T7 | [Implement bounded Redis payload and admission transitions](redis-admission-store.md) | infra | <TBD lead> | 8h | T3, T6 | blocked |
@@ -27,4 +27,6 @@
 | T20 | [Measure workload budgets and install aggregate synthetic checks](performance-observability.md) | tests | <TBD lead> | 8h | T18, T19, T21 | blocked |
 | T21 | [Benchmark Reading code budgets after backend scaffolding](benchmark-reading-code.md) | tests | Product Owner + coding agent | 4h | T3 | blocked |
 
-Total: 21 tasks, 154h, approximately 19.25 person-days at eight hours/day. Estimates are provisional, not a commitment; all tasks are <=8h. Overlapping file lanes serialize shared changes.
+Deferred outside tasks.json: [T22 — Revisit exact concurrent quota reservations](../backlog/exact-concurrent-quotas.md). No current dependency or launch gate; activate only by explicit product decision.
+
+Total: 21 active tasks, 154h, approximately 19.25 person-days at eight hours/day. Estimates are provisional, not a commitment; all tasks are <=8h. Overlapping file lanes serialize shared changes.

@@ -5,11 +5,11 @@ layer: "docs"
 deps: []
 blocks: ["T3", "T4"]
 acs: ["AC-01", "AC-04", "AC-07", "AC-10", "AC-11"]
-files_hint: ["docs/features/short-live-path/adr/", "docs/features/short-live-path/sad.md", "docs/features/short-live-path/data-model.md", "docs/features/short-live-path/contracts/openapi.yaml", "docs/features/short-live-path/contracts/events.md"]
+files_hint: ["docs/features/short-live-path/adr/", "docs/features/short-live-path/sad.md", "docs/features/short-live-path/data-model.md", "docs/features/short-live-path/contracts/openapi.yaml", "docs/features/short-live-path/contracts/events.md", "docs/features/short-live-path/spec.md"]
 owner: "Product Owner + coding agent"
 estimate: "8h"
 context_budget: "M"
-status: "todo"
+status: "done"
 ---
 
 # T2 — Resolve publication, clock and reservation state machines
@@ -20,7 +20,7 @@ status: "todo"
 
 - Lane: T1 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
+Planning gate: ADR-0008/0009 select PostgreSQL-write time and simplified v1 counters. T1/T2 documentation is complete; runtime guards require implementation/tests before Secret traffic. T21 follows T3. Exact concurrent quotas are deferred backlog T22 outside tasks.json, not a scaffold/launch gate. Fix test-profile/planning inputs before dispatch.
 
 ## Why (user story)
 
@@ -31,7 +31,7 @@ Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0
 > — `spec.md §4, US-02, verbatim` · full text: [spec.md](../spec.md)
 
 
-This task contributes: Resolve publication, clock and reservation state machines.
+This task records approved ADR-0008/0009: PostgreSQL-write lifetime/time, cleanup-before-serving and basic observed counters; exact quota reservations are deferred backlog T22 outside the v1 DAG. Runtime verification is explicitly not claimed.
 
 ## Inlined context
 
@@ -45,22 +45,22 @@ This task contributes: Resolve publication, clock and reservation state machines
 > — `sad.md §5, module boundaries, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Timing and scope obligations.** Expiration is the selected duration after successful creation, not form entry or initial reservation. The messages above state the approved cross-store order, not a concrete timestamp-publication algorithm: §11 still requires the exact creation-time anchor, final timestamp publication and atomic successful-quota accounting to be resolved and tested before implementation.
+> **Timing and scope obligations.** Expiration is the chosen interval after the PostgreSQL lifecycle INSERT (ADR-0008), not after final confirmation. Prepare the optional verifier before INSERT; sample database-derived millisecond timestamps once and never republish them. Commit/Redis/response delay consumes lifetime; no one-second release grace is implied. Lost confirmation and uncertain writes produce no link, auto-retry or deadline extension. Exact concurrent quota reservation is deferred by ADR-0009; input/hash bounds remain mandatory.
 >
 > — `sad.md §6, S1, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Admission and failure semantics.** At most 25 successful creations per rolling sixty-second address window and 1000 active Secrets are allowed, with Redis maxmemory 256 MiB/noeviction and at most 10,000 limiter records including reservations. People sharing a public address share its quota.
+> **Admission and failure semantics.** Basic admission checks 25 observed successes per rolling sixty-second address window; already-admitted concurrent requests can overshoot. Keep 1000 active Secrets, Redis 256 MiB/noeviction and 10000 transient counter identities, with safe refusal rather than eviction. Address/pair state uses retained keyed pseudonyms and expires within five minutes of last relevant request. No v1 quota reservations/leases or pending-slot registry exists. Known refusal yields no link; uncertain writes do not prove absence, and every possible payload retains its original hard deadline. Immutable metadata is not deleted as rollback. Manual retry is a fresh attempt, never recovery or extension.
 >
 > — `sad.md §6, S2, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Time and lifecycle obligations.** The countdown is presentation, never permission to bypass S4's final service-side release check. Device wall-clock changes cannot extend the lifetime.
+> **Time and lifecycle obligations.** The countdown is presentation, not permission. PostgreSQL-derived expiration and fresh service timing govern final release and conservative browser deadlines; device wall-clock changes cannot extend the window. Hide locally offline and on background/pagehide/freeze; invalidate stale asynchronous display/copy callbacks. On return, stay concealed until neutral revalidation and a fresh explicit Show. T8/T12 own runtime clock/transit/sleep tests before serving; representative profiles remain due before plan-tests. No promise covers modified clients or Recipient copies.
 >
 > — `sad.md §6, S6, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Retention and outage boundaries.** Active Secret/verifier data must be removed within sixty seconds of expiration while Redis can execute cleanup. The five-second tick and TTL are supporting mechanisms, not proof of that bound.
+> **Retention and outage boundaries.** The <=60-second active-record deletion bound remains mandatory while Redis can execute cleanup. TTL, a five-second tick or a fail-closed API alone is not proof; T8/T18 must test cleanup under faults and capacity. No physical RAM-erasure deadline applies during suspension/hang. Startup/recovery closes traffic, establishes current single-process ownership and safe PostgreSQL time, clears expired records and only then reopens. Continue possible Redis cleanup during PostgreSQL outage. Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
 >
 > — `sad.md §6, S7, abridged` · full text: [sad.md](../sad.md)
 
@@ -85,17 +85,17 @@ This task contributes: Resolve publication, clock and reservation state machines
 > — `spec.md §6, NFR-04, abridged` · full text: [spec.md](../spec.md)
 
 
-> | DM-OQ-02 | Successful-creation anchor and cross-store final timestamp publication. PostgreSQL precedes Redis, so simply stamping metadata before hash/store work cannot prove AC-04. Define exact publication/failure transitions without extending any published/orphan deadline.  | Backend responsibility with Product Owner review, before executable tasks. |
+> | DM-OQ-02 | RESOLVED by ADR-0008: sample PostgreSQL creation/expiration once at lifecycle INSERT after verifier preparation. Redis and confirmation retain that original deadline; no final timestamp publication. | T9 implements/tests write failures and shortened usable lifetime; not a decision blocker. |
 >
 > — `data-model.md §Open technical decisions, DM-OQ-02, abridged` · full text: [data-model.md](../data-model.md)
 
 
-> | DM-OQ-03 | Authoritative clock, monotonic deadlines, discontinuity detection, cleanup batch/retry budget, maintenance run identity and readiness fencing.  | Backend/frontend responsibility, before executable tasks. |
+> | DM-OQ-03 | APPROVED policy in ADR-0008: PostgreSQL time, final release check, conservative browser timing, unsafe-clock closure and startup/recovery cleanup before serving. Runtime clock/suspend and cleanup-budget implementation/evidence remain T8/T12 obligations. | Runtime verification before serving Secrets/launch, not an unresolved product choice. |
 >
 > — `data-model.md §Open technical decisions, DM-OQ-03, abridged` · full text: [data-model.md](../data-model.md)
 
 
-> | DM-OQ-04 | Reservation leases, generation fencing, uncertain/OOM partial-script outcomes, exact successful-quota/failure accounting and recovery reconciliation. Prove bounded cleanup and no late commit after lease release.  | Backend responsibility, before executable tasks. |
+> | DM-OQ-04 | DEFERRED by ADR-0009: exact concurrent creation/failure ceilings, quota reservations, leases and cross-process quota reconciliation. Basic rolling counters, hard resource caps and current-process readiness protection remain mandatory. | Backlog T22 outside tasks.json; revisit before replicas or when actual abuse/concurrency warrants it. |
 >
 > — `data-model.md §Open technical decisions, DM-OQ-04, abridged` · full text: [data-model.md](../data-model.md)
 
@@ -145,7 +145,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Sender is creating a Secret
 > **When** creation succeeds with the default lifetime or a chosen whole number of minutes from 1 to 1440
-> **Then** expiration is one hour after successful creation by default, or the chosen duration after successful creation. The service establishes the creation and expiration times; changing the Recipient device clock must not extend the sharing window. The Sender can select every whole-minute value in this range with hour-snapping assistance; selecting a non-hour duration remains possible. The exact interaction is owned by screens and must not silently remove minute-level choices. The confirmation and reading experiences show a visible countdown of remaining lifetime based on service-established expiration and service time; changing the device wall clock does not extend access. Countdown display does not replace server-side expiration enforcement.
+> **Then** expiration is one hour after the service records creation by default, or the chosen duration after that recorded creation time. Confirmation and delivery delay consume part of the chosen duration and do not restart or extend it. The service establishes the creation and expiration times; changing the Recipient device clock must not extend the sharing window. The Sender can select every whole-minute value in this range with hour-snapping assistance; selecting a non-hour duration remains possible. The exact interaction is owned by screens and must not silently remove minute-level choices. The confirmation and reading experiences show a visible countdown of remaining lifetime based on service-established expiration and service time; changing the device wall clock does not extend access. Countdown display does not replace server-side expiration enforcement.
 >
 > — `spec.md §5, AC-04, verbatim` · full text: [spec.md](../spec.md)
 
@@ -154,7 +154,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Secret requires a Reading code
 > **When** a Recipient attempts reading without the correct code
-> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; atomic concurrency controls and the bounded hash implementation remain design obligations. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
+> **Then** no Secret content can be seen or copied; the correct code permits reading only while the Share link remains valid. A wrong code does not permanently consume or invalidate the Share link. After five incorrect code verifications in any rolling sixty-second window for the same Share link and client network address, further code verification for that pair is temporarily denied until fewer than five failures remain in that window. Rejected requests do not extend the window. Other addresses are not blocked by that pair's failures; people behind one network address share its limit. Store only a code verification hash, not the plaintext code. This is basic online protection, not a guarantee against distributed guessing; bounded hash work remains mandatory, while exact concurrent quota reservations are deferred. Basic admission uses observed failure counters; already-admitted simultaneous attempts may exceed the nominal threshold, so v1 does not promise an exact five-failure concurrent ceiling. Disclosure accepts shorter code guesses, including an explicitly supplied empty code, within the same 1024 UTF-8 byte maximum. Invalid or oversized input and temporary work-capacity refusals do not run code verification or count as an incorrect-code failure.
 >
 > — `spec.md §5, AC-07, verbatim` · full text: [spec.md](../spec.md)
 
@@ -179,32 +179,32 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 ## Checklist
 
-- [ ] Resolve DM-OQ-02 with exact successful-creation timestamp publication transitions for PostgreSQL-before-Redis, without moving any published/orphan expiration. Work area: `docs/features/short-live-path/adr/` (and matching files_hint targets).
+- [x] Record DM-OQ-02 as resolved by ADR-0008: one PostgreSQL-derived INSERT timestamp pair, no final timestamp publication or extension. Work area: `docs/features/short-live-path/adr/` (and matching files_hint targets).
 
-- [ ] Resolve DM-OQ-03 with authoritative/monotonic time, browser transit/sleep safety, discontinuity detection, bounded cleanup batches/retries and generation-fenced readiness. Work area: `docs/features/short-live-path/sad.md` (and matching files_hint targets).
+- [x] Record DM-OQ-03 policy approval: PostgreSQL time, final check, browser conceal/revalidation and cleanup before serving; T8/T12/T18 implement and verify runtime details. Work area: `docs/features/short-live-path/sad.md` (and matching files_hint targets).
 
-- [ ] Resolve DM-OQ-04 with reservation leases/fencing, successful-quota accounting, uncertain/OOM partial writes and reconciliation; specify deterministic failure test vectors. Work area: `docs/features/short-live-path/data-model.md` (and matching files_hint targets).
+- [x] Record DM-OQ-04 as explicitly deferred to backlog T22, outside tasks.json with no scaffold/launch dependency. Retain basic counters, hard resource caps and expiry/privacy checks. Work area: `docs/features/short-live-path/data-model.md` (and matching files_hint targets).
 
-- [ ] Obtain recorded technical/Product Owner review, update source artifacts, then re-run tasks to refresh affected inline slices before any implementation task starts. An 8h decision session may end blocked, not falsely complete. Work area: `docs/features/short-live-path/contracts/openapi.yaml` (and matching files_hint targets).
+- [x] Record actual Product Owner approval, synchronize source/API/task snapshots and run structural checks; no independent security or runtime verification is claimed. Work area: `docs/features/short-live-path/contracts/openapi.yaml` (and matching files_hint targets).
 
-- [ ] Write the named tests first (RED), then implement and pass GREEN; for decision tasks use executable evidence/review vectors rather than claiming runtime success from prose.
+- [x] Use executed documentation/API/task structural checks for this decision-only task; runtime RED/GREEN and fault tests remain implementation obligations.
 
 ## Edge cases
 
 | Case | Behaviour |
 |---|---|
-| Metadata confirmed, payload uncertain | No confirmed URL; retain metadata, original deadline and conservative occupied eligibility. |
-| Old lease expires while work continues | Fencing prevents later publication before any slot is reused. |
+| Metadata confirmed, payload uncertain | No confirmed URL; retain metadata and original deadline; never infer absence or extend expiry. |
+| Concurrent quota checks admit together | Acknowledge possible nominal-threshold overshoot; exact reservation proof is deferred. Hard native-work/storage/expiry limits remain. |
 | Cleanup/clock uncertain | Readiness remains closed; executable cleanup continues. |
 
 Edge-case sources: [spec.md](../spec.md) §5, AC-01, AC-04, AC-07, AC-10, AC-11, abridged; [sad.md](../sad.md) §6, S1, S2, S6, S7, abridged. Decisions T1/T2 also follow [data-model.md](../data-model.md) §Open technical decisions, DM-OQ-01…05, abridged.
 
 ## Definition of Done
 
-- [ ] State-machine review walks success, uncertainty, stale-owner, clock-rollback and recovery vectors against AC-04/07/10/11; all DM-OQ-02/03/04 choices are reviewed before this gate closes.
+- [x] Record Accepted ADR-0008/0009 PostgreSQL-write/time and simplified quota policy, synchronize sources/API/tasks, and put exact concurrent quota reservations in backlog T22 outside the v1 DAG; runtime proof remains implementation work.
 
-- [ ] All inlined hard rules still hold; tests cite their AC IDs.
+- [x] All inlined hard rules still hold; tests cite their AC IDs.
 
-- [ ] Installed application test/lint/typecheck/build gates pass for touched code; decision-only tasks pass artifact validation and recorded review instead.
+- [x] Installed application test/lint/typecheck/build gates pass for touched code; decision-only tasks pass artifact validation and recorded review instead.
 
-- [ ] Stay within one working day; split/replan if the change exceeds roughly 500 LOC. Never close unresolved safety choices as done.
+- [x] Stay within one working day; split/replan if the change exceeds roughly 500 LOC. Never close unresolved safety choices as done.

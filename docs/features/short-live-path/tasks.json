@@ -38,10 +38,11 @@
         "docs/features/short-live-path/sad.md",
         "docs/features/short-live-path/data-model.md",
         "docs/features/short-live-path/contracts/openapi.yaml",
-        "docs/features/short-live-path/contracts/events.md"
+        "docs/features/short-live-path/contracts/events.md",
+        "docs/features/short-live-path/spec.md"
       ],
       "file": "docs/features/short-live-path/tasks/resolve-time-admission-protocol.md",
-      "dod": "State-machine review walks success, uncertainty, stale-owner, clock-rollback and recovery vectors against AC-04/07/10/11; all DM-OQ-02/03/04 choices are reviewed before this gate closes."
+      "dod": "Record Accepted ADR-0008/0009 PostgreSQL-write/time and simplified quota policy, synchronize sources/API/tasks, and put exact concurrent quota reservations in backlog T22 outside the v1 DAG; runtime proof remains implementation work."
     },
     {
       "id": "T3",
@@ -163,7 +164,7 @@
         "backend/tests/integration/admission.spec.ts"
       ],
       "file": "docs/features/short-live-path/tasks/redis-admission-store.md",
-      "dod": "Real-Redis integration tests race both quotas and all caps, exercise exact rolling boundaries, short/failed/successful attempts, lease fencing, OOM/timeout partial outcomes and five-minute state retention."
+      "dod": "Real-Redis integration tests prove basic rolling counters and retained histories, hard storage/cardinality/work caps, original expiry and safe OOM/timeout publication; acknowledge concurrent quota overshoot without requiring deferred reservation leases."
     },
     {
       "id": "T8",
@@ -186,7 +187,7 @@
         "backend/tests/integration/cleanup_recovery.spec.ts"
       ],
       "file": "docs/features/short-live-path/tasks/cleanup-recovery.md",
-      "dod": "Real-Redis/PostgreSQL fault tests measure <=60s active deletion and prove cleanup-before-serving after suspension/reconnect, stale-owner fencing, PostgreSQL-outage cleanup and no early-payload recovery."
+      "dod": "Real-Redis/PostgreSQL fault tests measure <=60s active deletion and prove cleanup-before-serving, safe PostgreSQL time/current-run guards, continued cleanup during PostgreSQL outage and no early-payload recovery; no deferred quota-lease protocol is required."
     },
     {
       "id": "T9",
@@ -213,7 +214,7 @@
         "backend/tests/integration/create_secret.spec.ts"
       ],
       "file": "docs/features/short-live-path/tasks/create-secret.md",
-      "dod": "createSecret contract/integration tests assert 201/422/429/503, exact service-established successful timestamps, no link on uncertain commits, 25-success rolling quota and orphan nonextension."
+      "dod": "createSecret contract/integration tests assert safe outcomes, fixed PostgreSQL-INSERT creation/expiration timestamps, shortened usable lifetime, no link on uncertain writes, basic observed 25-success checks and orphan nonextension."
     },
     {
       "id": "T10",
@@ -262,7 +263,7 @@
         "backend/tests/integration/disclose_secret.spec.ts"
       ],
       "file": "docs/features/short-live-path/tasks/explicit-disclosure.md",
-      "dod": "discloseSecret tests cover all 200/403/409/410/422/429/503 outcomes, parallel five-failure reservations, repeat readers and delayed correct verification/readiness changes at final release."
+      "dod": "discloseSecret tests cover safe HTTP outcomes, basic observed five-failure checks with acknowledged concurrent overshoot, hard global work admission, repeat readers and final PostgreSQL-time/readiness checks after asynchronous verification."
     },
     {
       "id": "T12",

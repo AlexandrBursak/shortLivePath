@@ -5,10 +5,11 @@ info:
   description: 'Anonymous, text-only credential sharing through temporary Share links, with repeated explicit
     reading before service-established expiration and an optional separate Reading code. No accounts,
     history, recovery, early removal, files or external credential revocation. Server-readable ephemeral
-    Secrets are accepted; minimal lifecycle metadata remains durable. T1 policy is synchronized from Accepted
-    ADR-0006/0007. DRAFT: timestamp publication, clocks and executable admission/recovery fencing remain
-    blocked by DM-OQ-02 through DM-OQ-04; this is not an executable or finalized security contract. Sources:
-    data-model.md; sad.md S1-S7; spec.md US-01-US-05 and AC-01-AC-12 (including AC-11b).'
+    Secrets are accepted; minimal lifecycle metadata remains durable. ADR-0008/0009 approve PostgreSQL-write
+    lifetime and service time, recovery-before-serving and basic observed quotas. Exact concurrent quota
+    reservations are deferred to backlog T22, not a v1 launch gate. Runtime verification is pending; this
+    is not an executable or verified security contract. Sources: data-model.md; sad.md S1-S7; spec.md
+    US-01-US-05 and AC-01-AC-12 (including AC-11b).'
   x-status: Draft
 servers:
 - url: /
@@ -24,23 +25,29 @@ x-source-documents:
 - ../CONTEXT.md
 x-project-decisions:
   error-envelope: Product Owner retained {error:{code,message,details}} during api stage.
-  trusted-address: 'ADR-0007: only a pinned immediate proxy supplies one sanitized literal address. Canonical
-    full IPv6; IPv4-mapped IPv6 shares IPv4 identity. Stable versioned HMAC-SHA-256 labels use a 32-byte
-    deployment key, never logged or client-supplied. Invalid/untrusted context returns 503 service_unavailable
-    before new limiter state; no public forwarding-header parameter.'
-  quota-continuity: 'ADR-0007: preserve same-key counters on ordinary API restart. On continuity loss/rotation
-    close Secret traffic, fence all old mutations, then require at least 60 continuous seconds after the
-    last possible old mutation plus cleanup/reconciliation. Restart the interval on discontinuity; never
-    infer fresh quota from missing state. T2 owns executable time/fencing. No addresses/pseudonyms in
-    logs.'
+  trusted-address: 'ADR-0009 retains ADR-0007: only a pinned immediate proxy supplies one sanitized literal
+    address. Canonical full IPv6; IPv4-mapped IPv6 shares IPv4 identity. Stable versioned HMAC-SHA-256
+    labels use a 32-byte deployment key, never logged or client-supplied. Invalid/untrusted context returns
+    503 service_unavailable before new limiter state; no public forwarding-header parameter.'
+  quota-continuity: 'ADR-0009 retains the conservative continuity rule: preserve same-key counters on
+    ordinary API restart. On continuity loss/rotation close Secret traffic, fence all old mutations, then
+    require at least 60 continuous seconds after the last possible old mutation plus cleanup/reconciliation.
+    Restart the interval on discontinuity; never infer fresh quota from missing state. T8/T12 verify single-process
+    time/recovery; exact cross-process quota reservations are deferred. No addresses/pseudonyms in logs.'
+  creation-time: 'ADR-0008: PostgreSQL clock sampled once at lifecycle INSERT, millisecond-aligned. Immutable
+    expires_at = created_at + selected minutes; later commit/Redis/response delay consumes lifetime.'
+  quota-accuracy: 'ADR-0009: basic observed rolling counters at 25 creations/address and five failures/link/address.
+    Already-admitted concurrent requests may overshoot; exact reservation/lease guarantees are deferred
+    to backlog T22. The two-native-call/no-queue cap, input/storage caps, expiry and privacy are not deferred.'
   authentication: 'ADR-0003/0005 and SAD §8: public capability token plus optional code; no BearerAuth.'
   idempotency: 'S2/DM lifecycle semantics: no automatic retry, deduplication or HTTP Idempotency-Key.
     S7 internal run identity does not add HTTP idempotency.'
-x-unresolved:
-- DM-OQ-02
-- DM-OQ-03
-- DM-OQ-04
+x-unresolved: []
+x-deferred:
+- 'DM-OQ-04: exact concurrent quota reservations, backlog T22 outside v1 DAG'
 x-verification-obligations:
+- T7 hard-cap payload publication
+- T8/T12 clocks and recovery before sensitive traffic
 - T21 post-scaffold calibration
 - T17 actual proxy/key provisioning
 - T18 security/fault verification
@@ -66,8 +73,9 @@ paths:
         accounting are confirmed and readiness/deadline remain safe (S1/S2). No automatic retries, deduplication,
         history or Idempotency-Key guarantee. A manual retry is a new attempt with a fresh token/UUID
         and its own quota gates; possible earlier records retain original expiry. No code-generation endpoint:
-        generation is browser-local (twenty unbiased CSPRNG Latin letters/digits). Successful-creation
-        timestamp publication remains DM-OQ-02. Accepted ADR-0006: 1024 UTF-8 code bytes, two concurrent
+        generation is browser-local (twenty unbiased CSPRNG Latin letters/digits). ADR-0008 anchors immutable
+        creation/expiration at the PostgreSQL INSERT after verifier preparation; commit/write/response
+        delay consumes lifetime, never extends it. Accepted ADR-0006: 1024 UTF-8 code bytes, two concurrent
         hash calls across creation/disclosure, zero waiting queue. Invalid input or global capacity refusal
         starts no hash and adds no code failure. Retain permits until native completion after timeout/disconnect;
         late results do not authorize release.'
@@ -157,8 +165,9 @@ paths:
           x-error-codes:
           - short_live_path.invalid_request
         '429':
-          description: 25 successes per rolling 60 seconds/address, or reserved in-flight slots occupy
-            allowance. Preserve current form input; wait and retry only deliberately.
+          description: Basic observed threshold of 25 successes per rolling 60 seconds/address. Concurrently
+            admitted requests may overshoot; no quota reservations in v1. Preserve current form input;
+            wait and retry only deliberately.
           headers:
             Cache-Control:
               $ref: '#/components/headers/Cache-Control'
@@ -173,8 +182,8 @@ paths:
                   value:
                     error:
                       code: short_live_path.creation_limited
-                      message: Creation quota or in-flight address slots are occupied. Wait before trying
-                        manually.
+                      message: Basic observed creation threshold reached. Wait before trying manually;
+                        exact concurrent quotas are deferred.
                       details: []
           x-error-codes:
           - short_live_path.creation_limited
@@ -356,16 +365,17 @@ paths:
       summary: Explicitly show exact Secret text before expiration
       description: 'Only explicit Show triggers this request. No session, identity, consumption or view
         count; repeat and concurrent reading is permitted. Revalidate stored shape and authoritative lifecycle,
-        reserve bounded pair/global hash-work admission before verification, and recheck payload/readiness/time
-        after asynchronous work immediately before bounded nonstreaming release. Missing code is not a
-        failed hash attempt. Wrong code returns only after failure accounting is confirmed; success releases
-        only its slot, not previous failures. Check conservative monotonic deadline before display/copy;
-        discard late or superseded responses, hide offline at expiry, conceal on background and require
-        neutral recheck plus fresh Show on return. No automatic retries (they could spend verification
-        allowance). Never claim remote erasure or external credential revocation. Accepted ADR-0006: 1024
-        UTF-8 code bytes, two concurrent hash calls across creation/disclosure, zero waiting queue. Invalid
-        input or global capacity refusal starts no hash and adds no code failure. Retain permits until
-        native completion after timeout/disconnect; late results do not authorize release.'
+        check the basic pair counter and acquire the hard process-wide work permit before verification;
+        recheck payload/readiness/PostgreSQL time after asynchronous work immediately before bounded nonstreaming
+        release. Missing code is not a failed hash attempt. Wrong code returns only after failure accounting
+        is confirmed; success does not erase previous failures. Admitted concurrent attempts may overshoot
+        five; quota reservations/leases are deferred by ADR-0009. Check conservative monotonic deadline
+        before display/copy; discard late or superseded responses, hide offline at expiry, conceal on
+        background and require neutral recheck plus fresh Show on return. No automatic retries (they could
+        spend verification allowance). Never claim remote erasure or external credential revocation. Accepted
+        ADR-0006: 1024 UTF-8 code bytes, two concurrent hash calls across creation/disclosure, zero waiting
+        queue. Invalid input or global capacity refusal starts no hash and adds no code failure. Retain
+        permits until native completion after timeout/disconnect; late results do not authorize release.'
       x-user-stories:
       - US-03
       - US-04
@@ -519,9 +529,9 @@ paths:
           x-error-codes:
           - short_live_path.invalid_request
         '429':
-          description: Five failures per rolling 60 seconds/link/address, or reservations occupy remaining
-            slots. No hash, new failure timestamp, window extension, link-wide lockout or prior-failure
-            reset.
+          description: Basic observed threshold of five failures per rolling 60 seconds/link/address.
+            Admitted concurrent attempts may overshoot; exact reservations are deferred. No hash, new
+            failure timestamp, window extension, link-wide lockout or prior-failure reset.
           headers:
             Cache-Control:
               $ref: '#/components/headers/Cache-Control'
@@ -536,8 +546,8 @@ paths:
                   value:
                     error:
                       code: short_live_path.verification_limited
-                      message: Verification slots for this link and address are temporarily occupied.
-                        Wait.
+                      message: Basic observed failure threshold for this link and address is reached.
+                        Wait; exact concurrent quotas are deferred.
                       details: []
           x-error-codes:
           - short_live_path.verification_limited
@@ -640,7 +650,7 @@ components:
         Enforce x-max-utf8-bytes and scalar-text validity before hashing; never truncate. Codes over this
         bound return 422 invalid_request without a failed verification.
       x-max-utf8-bytes: 1024
-      x-origin: spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0006 input budget
+      x-origin: spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0009 retained input budget
       x-origin-confidence: high
     CreateSecretRequest:
       type: object
@@ -703,10 +713,10 @@ components:
         service_time:
           type: string
           format: date-time
-          description: Authoritative service UTC instant sampled for this response, millisecond precision.
-            Conservative monotonic client deadline must account for transit; do not use the device wall
-            clock or assume the full expires_at minus service_time remains on arrival. Algorithm blocked
-            by DM-OQ-03.
+          description: Authoritative PostgreSQL UTC instant sampled for this response, millisecond precision
+            (ADR-0008). Conservative monotonic client deadline must account for transit; do not use the
+            device wall clock or assume the full expires_at minus service_time remains on arrival. Runtime
+            transit/sleep verification remains T8/T12, not an unresolved source-time choice.
           x-origin: sad.md S1/S3/S4/S6; spec AC-04/AC-10 service timing
           x-origin-confidence: medium
     ShareLink:

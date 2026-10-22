@@ -73,6 +73,9 @@ def main():
         for dep in graph[ident]:
             ancestors[ident].update(ancestors[dep])
     tracker = (FEATURE / 'tasks/tracker.md').read_text()
+    statuses = {t['id']: read_frontmatter((ROOT / t['file']).read_text())['status'] for t in tasks}
+    require('T22' not in ids, 'deferred quota backlog must not enter the v1 DAG')
+    require((FEATURE / 'backlog/exact-concurrent-quotas.md').is_file(), 'missing deferred quota backlog')
     for t in tasks:
         ident = t['id']
         require(set(t) == JSON_KEYS, f'{ident}: JSON field contract')
@@ -128,7 +131,8 @@ def main():
                 require((path.parent / link.split('#')[0]).exists(), f'{ident}: broken source link {link}')
         if ident not in docs_gate:
             require(docs_gate <= ancestors[ident], f'{ident}: bypasses DM-OQ gate')
-            require(fm['status'] == 'blocked', f'{ident}: provisional task must be blocked')
+            expected = 'todo' if all(statuses[d] == 'done' for d in t['deps']) else 'blocked'
+            require(fm['status'] == expected, f'{ident}: prerequisite/status drift')
         require(ident in tracker and t['title'] in tracker, f'{ident}: tracker missing')
         covered.update(t['acs'])
     for artifact in paths + [FEATURE / 'tasks.json', FEATURE / 'tasks/_epic.md', FEATURE / 'tasks/tracker.md']:
@@ -161,7 +165,7 @@ def main():
     require(declared == ids, 'Mermaid nodes differ from JSON')
     require(actual_edges == {(d, t['id']) for t in tasks for d in t['deps']}, 'Mermaid edges differ from JSON')
     result = {
-        'result': 'PASS', 'scope': 'provisional documentation only; runtime readiness remains BLOCKED',
+        'result': 'PASS', 'scope': 'approved documentation baseline; runtime verification remains unperformed; T22 deferred outside DAG',
         'tasks': len(tasks), 'covered_acs': sorted(covered), 'total_hours': total_hours,
         'person_days_at_8h': total_hours / 8, 'acyclic': True, 'inverse_blocks': True,
         'json_markdown_mirror': True, 'verbatim_ac_and_story': True,

@@ -20,7 +20,7 @@ status: "blocked"
 
 - Lane: T3 share files_hint; serialize overlapping changes, including shared route/registry/canon files.
 
-Planning gate: T1 source-policy synchronization is complete under Accepted ADR-0006/0007. T2 must still resolve DM-OQ-02…04 before implementation and affected snapshots must be refreshed afterward. T21 benchmarks after T3, not before scaffolding. No runtime/security approval follows from T1 completion.
+Planning gate: ADR-0008/0009 select PostgreSQL-write time and simplified v1 counters. T1/T2 documentation is complete; runtime guards require implementation/tests before Secret traffic. T21 follows T3. Exact concurrent quotas are deferred backlog T22 outside tasks.json, not a scaffold/launch gate. Fix test-profile/planning inputs before dispatch.
 
 ## Why (user story)
 
@@ -45,7 +45,7 @@ This task contributes: Implement bounded cleanup and generation-fenced readiness
 > — `sad.md §5, module boundaries, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Retention and outage boundaries.** Active Secret/verifier data must be removed within sixty seconds of expiration while Redis can execute cleanup. The five-second tick and TTL are supporting mechanisms, not proof of that bound.
+> **Retention and outage boundaries.** The <=60-second active-record deletion bound remains mandatory while Redis can execute cleanup. TTL, a five-second tick or a fail-closed API alone is not proof; T8/T18 must test cleanup under faults and capacity. No physical RAM-erasure deadline applies during suspension/hang. Startup/recovery closes traffic, establishes current single-process ownership and safe PostgreSQL time, clears expired records and only then reopens. Continue possible Redis cleanup during PostgreSQL outage. Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
 >
 > — `sad.md §6, S7, abridged` · full text: [sad.md](../sad.md)
 
@@ -69,8 +69,8 @@ Fallback: if an inline is insufficient, outdated or contradicts code, open its n
 
 ## Data delta
 
-> | `payload:expiry` | ZSET: lifecycle UUID member, absolute expires_at_ms score | S7 due-record index; bounded by active/uncertain payload admission. Payload TTL can remove a hash first; index cleanup must tolerate that. |
-> | `limiter:expiry` | ZSET: limiter-state key or reservation handle member, maintenance deadline score | Enumerates active temporary state/reservations for bounded cleanup and cardinality accounting; no raw token, IP, code or content. |
+> | `payload:expiry` | ZSET: lifecycle UUID member, immutable expires_at_ms score | Due payload cleanup/capacity accounting; at most 1000 active payloads, no creation-capacity lease. |
+> | `limiter:expiry` | ZSET: bounded address/pair state handles and maintenance deadlines | Due counter cleanup and 10000-record cardinality enforcement; no raw token, IP, content or code. |
 >
 > — `data-model.md §Entities / Indexes, task-owned fields, verbatim` · full text: [data-model.md](../data-model.md)
 
@@ -118,7 +118,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 - [ ] Delete expired payloads/verifiers and stale limiter/index handles within 60s while Redis executes; do not scan permanent metadata or use unbounded KEYS. Work area: `backend/app/services/readiness_service.ts` (and matching files_hint targets).
 
-- [ ] Close and fence serving on startup/reconnect/identity/clock changes; reopen only after current-generation dependency checks, cleanup and conservative reservation reconciliation. Work area: `backend/app/services/service_clock.ts` (and matching files_hint targets).
+- [ ] Close and fence serving on startup/reconnect/identity/clock changes; reopen only after current-run dependency/PostgreSQL-time checks, expired cleanup and retained address-key continuity checks; exact quota leases are deferred. Work area: `backend/app/services/service_clock.ts` (and matching files_hint targets).
 
 - [ ] Continue Redis cleanup when PostgreSQL health fails. Old completion cannot reopen current readiness; report aggregate internal failure on exhausted retries. Work area: `backend/start/maintenance.ts` (and matching files_hint targets).
 
@@ -135,7 +135,7 @@ Edge-case sources: [spec.md](../spec.md) §5, AC-10, AC-11, AC-11b, abridged; [s
 
 ## Definition of Done
 
-- [ ] Real-Redis/PostgreSQL fault tests measure <=60s active deletion and prove cleanup-before-serving after suspension/reconnect, stale-owner fencing, PostgreSQL-outage cleanup and no early-payload recovery.
+- [ ] Real-Redis/PostgreSQL fault tests measure <=60s active deletion and prove cleanup-before-serving, safe PostgreSQL time/current-run guards, continued cleanup during PostgreSQL outage and no early-payload recovery; no deferred quota-lease protocol is required.
 
 - [ ] All inlined hard rules still hold; tests cite their AC IDs.
 

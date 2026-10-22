@@ -110,15 +110,17 @@ C4Context
 
 1. **Build web-frontend and backend-service** — One responsive browser interface supports Sender and Recipient on mobile and desktop; AdonisJS provides service-controlled expiration and abuse enforcement. Both applications live in this repository. See ADR-0001.
 2. **Use a neutral Next.js shell and a server-readable ephemeral service** — Neutral shells and interactive browser forms remain; typed API clients submit content and optional Reading codes over HTTPS to AdonisJS. No client-side content encryption or key fragment is required. Sensitive browser state stays in page memory without localStorage, IndexedDB, automatic drafts or sensitive service-worker caches. Repeat visits begin at the neutral gate. ADR-0003 supersedes ADR-0002’s operator-blind requirement.
-3. **Store Secrets only in ephemeral Redis** — No disk persistence, Secret backups or PostgreSQL Secret rows. Check expiration immediately before release independently of Redis cleanup. Optional Reading code verification occurs server-side; an incorrect code does not consume a link. The code is stored as a verification hash, not plaintext. Permit at most five failed code verifications in any rolling sixty-second window for each Share link and client network address pair; deny further verifications for that pair while five failures remain in the window, without extending the window on rejected requests. Other addresses remain eligible, and no permanent or link-wide lockout is introduced. Shared-NAT readers share the pair limit. This is basic online protection, not protection against distributed guessing. The exact bounded verifier implementation and pre-verification concurrency controls remain pending.
+3. **Store Secrets only in ephemeral Redis** — No disk persistence, Secret backups or PostgreSQL Secret rows. Check expiration immediately before release independently of Redis cleanup. Optional Reading code verification occurs server-side; an incorrect code does not consume a link. The code is stored as a verification hash, not plaintext. Use a basic observed-counter threshold of five failures per rolling sixty-second link/address pair; deny when five failures are observed, without extending timestamps on rejected requests. Concurrently admitted attempts may overshoot under ADR-0009. Other addresses remain eligible, and no permanent or link-wide lockout is introduced. Shared-NAT readers share the pair limit. This is basic online protection, not protection against distributed guessing. ADR-0009 retains the hard two-call/no-queue verifier budget and defers exact per-pair quota reservations.
 
-**Creation limit (Product Owner amendment):** Permit at most 25 successful creations in any rolling sixty-second window per client network address, superseding the earlier proposed limits of ten and one hundred by explicit Product Owner amendment. Office users may share one public address. This does not change the approved five-failed-code-verifications limit for a Share link/address pair. The remainder of the package was subsequently explicitly confirmed: at most 1000 active Secrets, Redis maxmemory 256 MiB, reject new creations at capacity without evicting existing Secrets and retain current form text. Do not automatically retry creation or claim unconfirmed success; a manual retry is a new creation, and any unreachable earlier record keeps its original expiration. Counter keys use temporary pseudonymous network-address labels, no IP logging, at most five minutes retention after the last request, and bounded cardinality. These are initial configuration values, not measured capacity. Counter cap, pseudonym details and concurrency-safe admission remain concrete design details.
+**Creation limit (Product Owner amendment):** ADR-0009 retains a basic 25-observed-successes per rolling sixty-second address threshold and the five-observed-failures link/address threshold. Already-admitted concurrent operations may overshoot; exact ceilings/reservations are deferred to backlog T22. Office readers share a public-address counter. This does not relax 1000 active payloads, Redis 256 MiB/noeviction, 10000 counter identities, five-minute counter retention, input/hash bounds, exact code verification or expiration. No automatic retry, speculative link or deadline extension is allowed.
 
 4. **Persist minimal link lifecycle metadata indefinitely for now** — PostgreSQL stores only a lookup digest of the unguessable link token and creation/expiration timestamps. Content and code verifiers stay exclusively in ephemeral Redis. Known expired URLs remain usable for an explicit expired message, not a 404; known unexpired records with missing Redis payload show early unavailability. Confirmation and reading experiences display a service-time-based remaining-lifetime countdown. Indefinite metadata retention is approved for now and may be revised later, without implying indefinite Secret retention. See ADR-0005.
 
+**Approved T2 amendment (2026-10-22):** ADR-0008 anchors lifetime/time in PostgreSQL and ADR-0009 explicitly defers exact concurrent quota reservations. Expected legitimate usage is about five people/day, not proof of abuse safety or a changed NFR-01 target.
+
 **Accepted T1 starting values (2026-10-22):** ADR-0006 fixes initial Argon2id/input/work budgets and ADR-0007 fixes trusted-address/HMAC/continuity policy by explicit Product Owner approval. T1 accepted spec/API policy synchronization is complete; actual versions/topology are pinned during implementation/deployment. Benchmark calibration is T21 after backend scaffold T3 and gates final T20, not scaffolding. Acceptance is not independent security approval or measured performance.
 
-**Pending decisions:** concrete Reading code verifier integration, pre-verification attempt/concurrency reservation, concrete Redis/infrastructure cleanup and recovery controls, counter cardinality/privacy details, concurrency-safe capacity enforcement and cross-store creation/failure ordering. Resource budgets and manual-retry semantics are approved. Server-readable processing and the optional code were explicitly confirmed by Product Owner. No implementation-readiness or security-review approval is implied.
+**Pending decisions:** The approved baseline is ADR-0008 PostgreSQL creation/time plus ADR-0009 basic limits and deferred exact quota reservations. Runtime clock/sleep handling, safe publication and bounded cleanup are implementation/test obligations in T7/T8/T9/T12, not permission to serve without verification. Exact quota leases/cross-process reconciliation are outside the v1 DAG. No runtime/security readiness is claimed by approval.
 
 **Decision override:** Product Owner withdrew the earlier operator-blind encryption requirement and approved server-readable processing, while retaining the optional Reading code, no-sensitive-log/backup rules and expiration/erasure guarantees. Earlier sections and upstream spec are synchronized rather than leaving contradictory approved requirements.
 
@@ -170,7 +172,7 @@ C4Container
     Rel(sender, web, "Creates Secret and copies confirmed link", "HTTPS")
     Rel(recipient, web, "Opens neutral gate and explicitly chooses Show", "HTTPS")
     Rel(web, api, "Browser typed client sends creation or explicit reveal request", "Same-origin HTTPS through reverse proxy")
-    Rel(api, redis, "Atomic admission and reads, attempt controls, expiry and cleanup", "Private Redis connection")
+    Rel(api, redis, "Basic counters, bounded reads, expiry and cleanup", "Private Redis connection")
     Rel(api, postgres, "Persists minimal lifecycle metadata and resolves expired or early-unavailable links", "Private PostgreSQL connection")
 ```
 
@@ -194,7 +196,7 @@ sequenceDiagram
     Sender->>Web: Enter Secret, lifetime and optional code
     Web->>API: Submit explicit creation
     API->>API: Validate exact fields, UTF-8 size and lifetime
-    API->>R: Check bounded admission and reserve creation capacity
+    API->>R: Check basic observed counter and hard resource capacity
     API->>PG: Persist minimal lifecycle metadata
     PG-->>API: Confirm metadata write
     API->>R: Store temporary payload and optional code verifier with expiration
@@ -203,13 +205,13 @@ sequenceDiagram
         API-->>Web: Confirm Share link, service time and expiration
         Web-->>Sender: Show link and remaining-lifetime countdown
     else Store failure, capacity rejection or uncertain outcome
-        API->>R: Attempt safe reservation rollback and orphan cleanup
+        API->>R: Attempt bounded orphan cleanup without extending expiry
         API-->>Web: No success claim or confirmed Share link
         Web-->>Sender: Preserve input and explain safe retry or waiting
     end
 ```
 
-**Creation ordering and partial failure.** This diagram shows the success-path order, not a distributed transaction. A definitive PostgreSQL failure stops before payload creation; Redis reservations expire and are bounded. A committed metadata row without a Redis payload is harmless early unavailability, not a success claim. An uncertain PostgreSQL commit is treated as unconfirmed and does not trigger an automatic payload write or retry. A Redis timeout after an attempted write may leave an unreachable payload and/or reservation: best-effort rollback is not proof of absence, so every possible payload keeps a hard expiration and bounded cleanup. A manual retry uses a new random token, consumes a new successful-creation slot if it succeeds, and never extends an old record. Concrete atomic reservation, commit-time timestamp publication and quota accounting must be proven in implementation tests; no cross-store atomicity or deduplication is promised.
+**Creation ordering and partial failure.** Prepare optional code hashing within the retained process-wide work budget, then sample PostgreSQL creation/expiration once in the lifecycle INSERT. Confirmed metadata precedes payload publication with that same hard deadline; commit/Redis/response delay reduces usable lifetime. Uncertain metadata means no payload write or link; uncertain Redis means no success claim or automatic retry. Possible orphans keep original expiry and bounded cleanup. Counter checks are basic observed-state checks, not reservations or a distributed transaction; exact concurrent quota accounting is deferred by ADR-0009.
 
 **Critical flow 2: neutral status, explicit disclosure and expiry.**
 
@@ -246,19 +248,19 @@ sequenceDiagram
 
 **Approved state/failure policy.** Known expired links use PostgreSQL metadata to show expired even if Redis data is gone. Known unexpired metadata with a missing Redis record means early unavailability. Unknown links are safely unavailable. A dependency timeout is temporary service unavailability, never evidence of expiration, an unknown link or an incorrect code. If either required store is unavailable, disclosure fails closed; there is no alternate read path that bypasses checks. The diagram abbreviates failure exits: after a metadata rejection or dependency failure, stop before optional verification or further store calls. Neutral status never releases content. No visit or successful read consumes a link, including concurrent reads.
 
-**Time and disclosure.** Use authoritative service expiration, never the browser wall clock, for eligibility. Check immediately before the bounded nonstreaming release; previously released/in-flight bytes cannot be recalled. The browser derives a conservative deadline from service timing and a monotonic clock, checks again after asynchronous work and before display/copy, hides on deadline, and conceals content before background/suspension return until a safe recheck completes. Late arrivals are discarded. The exact clock-jump, recovery and readiness controls are resolved in §§7–8. The sequences stage must extend these seeds to cover every AC, including concurrent code attempts, cleanup, partial failures, late responses and restoration without payload resurrection.
+**Time and disclosure.** PostgreSQL provides authoritative service time. Obtain fresh time after asynchronous verification and check the immutable deadline immediately before bounded nonstreaming release; unsafe/backward time or stale readiness fails closed. Conservative monotonic elapsed-time handling must not turn an old sample into permission. Browser timing accounts for transit, hides offline at expiry, conceals background return and requires neutral revalidation plus explicit Show. T8/T12 must implement/test clock rollback, sleep and late response vectors before serving Secrets. Previously released bytes/copies cannot be recalled.
 
 ### T1 transport and admission refinements
 
 Accepted ADR-0006/0007 refine the S1/S2/S3/S4/S7 prose branches without adding endpoints or deployables. Before parsing/expensive work, creation and disclosure admit only application/json with absent or identity Content-Encoding and at most 524288 wire bytes, including chunked/unknown-length bodies. Oversized body maps to 413 short_live_path.request_too_large; unsupported media type or compression maps to 415 short_live_path.unsupported_media_type. Both use the safe error envelope, no-store/no-referrer and no submitted-value echo. Reject malformed/oversized scalar Reading codes with 422 short_live_path.invalid_request before hashing (maximum 1024 UTF-8 bytes, create minimum six code points); no truncation, wrong-code increment or confirmed link. Proxy/API limits must agree; GET status accepts no body and is not a hash-work admission path.
 
-Global hash saturation (two concurrent calls/no queue) is 503 capacity_unavailable, not pair 429 or wrong-code 403. Retain the native-work permit through actual completion after timeout/disconnect. Exact permit/reservation acquisition and fencing stay T2 obligations. Proxy trust/canonicalization/HMAC/continuity follow ADR-0007; do not expose forwarding headers as client-settable API parameters. Invalid/untrusted address context, continuity recovery or incomplete fencing fails closed with 503 service_unavailable on Secret operations. Failures cannot clear prior histories, bypass admission or publish payloads. T2 must pin the executable recovery protocol; T17/T18 verify actual proxy/key configuration and faults.
+Global hash saturation (two concurrent calls/no queue) is 503 capacity_unavailable, not pair 429 or wrong-code 403. Retain the native-work permit through actual completion after timeout/disconnect. Process-local native-work admission remains mandatory; exact quota reservations are deferred by ADR-0009. Proxy trust/canonicalization/HMAC/continuity follow ADR-0009 (inherited from historical ADR-0007); do not expose forwarding headers as client-settable API parameters. Invalid/untrusted address context, continuity recovery or incomplete fencing fails closed with 503 service_unavailable on Secret operations. Failures cannot clear prior histories, bypass admission or publish payloads. T8/T12 implement and test current-process time/recovery guards before sensitive traffic; exact quota reservations remain deferred backlog T22. T17/T18 verify actual proxy/key configuration and faults.
 
 ### S1. Create with lifetime and optional Reading code
 
 Coverage: US-01, US-02, US-03; AC-01, AC-02, AC-04, AC-05, AC-06. Screen path: SCR-01 to SCR-02 only after confirmed success. Status: confirmed in prose by Product Owner.
 
-The two design seed diagrams above are preserved verbatim. Additional runtime diagrams use generic participants mapped to §5: user (Sender or Recipient), ui (Web UI), service (Secret API), data-store (lifecycle metadata) and data-store (ephemeral payloads and admission state). The two store roles are not a distributed transaction or new building blocks. No external delivery integration is introduced.
+The design seeds and S1/S2/S4/S7 were revised to the approved ADR-0008/0009 baseline. Additional runtime diagrams use generic participants mapped to §5: user (Sender or Recipient), ui (Web UI), service (Secret API), data-store (lifecycle metadata) and data-store (ephemeral payloads and admission state). The two store roles are not a distributed transaction or new building blocks. No external delivery integration is introduced.
 
 ```mermaid
 sequenceDiagram
@@ -268,81 +270,46 @@ sequenceDiagram
     participant S as service
     participant M as data-store (lifecycle)
     participant E as data-store (ephemeral)
-    Note over U,UI: Precondition: SCR-01 is open without registration or a saved draft
-    U->>UI: Enter optional address and login plus password or multiline key
-    UI->>UI: Default lifetime to sixty minutes
-    opt Sender changes lifetime
-        U->>UI: Choose whole minutes from one through 1440 with hour-snapping assistance
-        UI->>UI: Retain every minute-level choice without silent rounding
-    end
-    alt Sender leaves Reading code disabled
-        UI->>UI: Omit code requirement
-    else Sender chooses a Reading code
-        U->>UI: Enter code with exact case, spaces and Unicode
-    else Sender requests random generation
-        U->>UI: Request generated code
-        UI->>UI: Generate twenty Latin-letter or digit characters using secure unbiased randomness
-    end
-    UI-->>U: Explain optional code, separate handover and nonblocking weak-code guidance
-    U->>UI: Explicitly request creation
-    UI->>S: Submit exact text, selected lifetime and optional code over protected transport
-    S->>S: Check required non-whitespace password or key and summed UTF-8 text size
-    S->>S: Check whole-minute lifetime and enabled code minimum of six Unicode code points
-    Note over UI,S: Count address, login and credential bytes only toward 64 KiB, excluding code and packaging
-    alt Missing or whitespace-only credential, or text exceeds 64 KiB
-        S-->>UI: Refuse creation with a plain-language content explanation and no link
-        UI-->>U: Keep current input at SCR-01 for correction
-    else Lifetime is fractional or outside one through 1440 minutes
-        S-->>UI: Refuse creation with permitted lifetime bounds and no link
-        UI-->>U: Keep current input without clamping or rounding
-    else Enabled Reading code is shorter than six Unicode code points
-        S-->>UI: Refuse creation with code minimum explanation and no link
-        UI-->>U: Keep exact current input for correction
-    else All submitted fields are valid
-        S->>S: Preserve valid credential text and code without trimming or normalization
-        S->>E: Request atomic bounded creation admission and capacity reservation
-        Note over S,E: persists bounded temporary admission reservation, never a durable network address
-        E-->>S: Return admission outcome
-        alt Admission is refused or uncertain
-            S-->>UI: Return no confirmed link, following S2 safe failure policy
-            UI-->>U: Preserve input and explain waiting or uncertain outcome
-        else Admission is confirmed
-            opt Reading code is enabled
-                S->>S: Compute salted password-hard verifier within admitted work budget
+    U->>UI: Enter exact fields, lifetime and optional chosen or generated code
+    UI->>S: Explicit create with no automatic retry
+    S->>S: Validate scalar text, 64 KiB aggregate, integer minutes and code byte/minimum bounds
+    alt Invalid fields, body or encoding
+        S-->>UI: Safe validation or transport refusal, no link or hash
+        UI-->>U: Retain exact form and explain correction
+    else Valid request
+        S->>E: Check basic observed address counter and hard resource capacity
+        alt Observed threshold, capacity or dependency refuses
+            S-->>UI: Safe no-link refusal without new wrong-code failure
+        else Basic admission permits
+            opt Code enabled
+                S->>S: Compute salted verifier under shared two-call no-queue work cap
             end
-            S->>S: Generate unguessable random link token and derive lookup digest
-            S->>M: Persist only lookup digest and service-established lifecycle timestamps
-            Note over S,M: persists minimal link lifecycle metadata indefinitely, never content, code or raw token
-            M-->>S: Return lifecycle-write outcome
-            alt Lifecycle write is failed or uncertain
-                S-->>UI: Return no confirmed link, following S2 safe failure policy
-                UI-->>U: Preserve input without automatic retry
-            else Lifecycle write is confirmed
-                S->>E: Store exact payload and optional verifier under the same hard expiration
-                Note over S,E: persists ephemeral Secret and optional code verifier without disk copies or backups
-                E-->>S: Return payload-write and admission-accounting outcome
-                alt Payload or successful-creation accounting is failed or uncertain
-                    S-->>UI: Return no confirmed link, following S2 bounded orphan cleanup policy
-                    UI-->>U: Preserve input without a success claim or automatic retry
-                else Both stores and admission accounting are confirmed
-                    S->>S: Recheck readiness and creation eligibility before confirmation
-                    alt Readiness or deadline is no longer safe
-                        S-->>UI: Return no confirmed link, following S2 safe failure policy
-                        UI-->>U: Preserve input without automatic retry
-                    else Confirmation remains eligible
-                        S-->>UI: Confirm Share link, service time and expiration without code in the link
-                        UI->>UI: Derive conservative countdown from service timing and monotonic elapsed time
-                        UI-->>U: Show SCR-02 with copyable link and confirmed expiration countdown
-                        UI-->>U: Offer separate code handover and explain no recovery or external credential revocation
+            S->>M: INSERT lifecycle with one PostgreSQL creation-time sample and fixed expiration
+            Note over S,M: persists only UUID, digest and immutable database-derived timestamps
+            alt Metadata failed or commit uncertain
+                S-->>UI: No confirmed link and no payload write
+            else Metadata confirmed
+                S->>E: Publish complete expiring payload within hard storage cap and record success
+                Note over S,E: persists ephemeral payload/verifier with original PostgreSQL deadline
+                alt Write failed or uncertain
+                    S-->>UI: No success claim, possible orphan keeps original expiry
+                else Payload confirmed
+                    S->>M: Obtain fresh PostgreSQL time
+                    S->>S: Recheck current readiness and strict original deadline
+                    alt Expired, unsafe time or readiness changed
+                        S-->>UI: Safe refusal, no confirmed link or deadline extension
+                    else Still eligible
+                        S-->>UI: Confirm Share link, service time and original expiration
+                        UI-->>U: SCR-02 countdown, separate code handover and no-recovery guidance
                     end
                 end
             end
         end
     end
-    Note over U,E: Postcondition: only confirmed success reaches SCR-02, otherwise SCR-01 retains input without an issued link
+    Note over U,E: Selected lifetime starts at PostgreSQL INSERT, not confirmation
 ```
 
-**Timing and scope obligations.** Expiration is the selected duration after successful creation, not form entry or initial reservation. The messages above state the approved cross-store order, not a concrete timestamp-publication algorithm: §11 still requires the exact creation-time anchor, final timestamp publication and atomic successful-quota accounting to be resolved and tested before implementation. S2 expands all partial/uncertain creation paths, including a lost confirmation response. No plaintext code is retained in either store. The browser keeps form/code state only in current page memory. No complexity rule rejects an otherwise valid code. Exact lifetime-slider interaction remains owned by screens, and the finite code/request/hash resource budget remains an explicit §11 decision rather than an invented maximum.
+**Timing and scope obligations.** Expiration is the chosen interval after the PostgreSQL lifecycle INSERT (ADR-0008), not after final confirmation. Prepare the optional verifier before INSERT; sample database-derived millisecond timestamps once and never republish them. Commit/Redis/response delay consumes lifetime; no one-second release grace is implied. Lost confirmation and uncertain writes produce no link, auto-retry or deadline extension. Exact concurrent quota reservation is deferred by ADR-0009; input/hash bounds remain mandatory.
 
 ### S2. Creation admission, partial failure and manual retry
 
@@ -356,84 +323,47 @@ sequenceDiagram
     participant S as service
     participant M as data-store (lifecycle)
     participant E as data-store (ephemeral)
-    Note over U,E: Precondition: valid creation input is in current page memory, with no automatic retry
-    U->>UI: Explicitly request creation
-    UI->>S: Submit one creation attempt
-    S->>S: Check recovery readiness and derive temporary address pseudonym from trusted client address
-    alt Readiness, clock safety or required dependency is unavailable
-        S-->>UI: Refuse safely without a confirmed link or sensitive error details
-        UI-->>U: Keep input and explain temporary service unavailability
-    else Service is ready
-        S->>E: Atomically check rolling successful quota, in-flight reservations and resource caps
-        E-->>S: Return bounded admission result
-        alt Twenty-five successes remain in the address window or reservations occupy eligible slots
-            S-->>UI: Refuse creation without a link and explain waiting
-            UI-->>U: Keep exact input at SCR-01 without automatic retry
-        else Capacity, limiter cardinality or memory allocation is exhausted
-            S-->>UI: Refuse creation without a link and explain temporary capacity limits
-            UI-->>U: Keep exact input at SCR-01
-            Note over S,E: Preserve existing Secrets and active safety state, never evict them to admit this request
-        else Admission is failed or uncertain
-            S-->>UI: Return no confirmed link and no success claim
-            UI-->>U: Preserve input and explain uncertainty
-            Note over S,E: Bound any possible reservation by its lease, never bypass admission on timeout
-        else Admission reservation is confirmed
-            Note over S,E: persists bounded pseudonymous reservation within the 10,000 limiter-record cap
-            S->>S: Prepare random token and optional verifier within bounded work admission
-            alt Preparation or hash-work admission fails
-                S->>E: Attempt safe release of this attempt's reservation
-                Note over S,E: updates temporary reservation state, with lease fallback if release is uncertain
-                S-->>UI: Return no confirmed link and preserve retry choice
-            else Preparation succeeds
-                S->>M: Attempt minimal lifecycle write
-                Note over S,M: persists only token digest and creation and expiration times if committed
-                M-->>S: Return confirmed, definitive failure or uncertain commit outcome
-                alt Lifecycle write definitively fails
-                    S->>E: Attempt safe release of this attempt's reservation
-                    S-->>UI: Return no confirmed link without writing a payload
-                else Lifecycle commit is uncertain
-                    S->>E: Attempt safe release of this attempt's reservation
-                    S-->>UI: Return no confirmed link without attempting a payload write or automatic retry
-                    Note over S,M: Possible committed metadata remains, never treated as proof of payload availability
-                else Lifecycle commit is confirmed
-                    S->>E: Attempt expiring payload write and successful-creation quota accounting
-                    Note over S,E: persists ephemeral payload and optional verifier plus bounded admission accounting
-                    E-->>S: Return write and accounting outcome
-                    alt Write or accounting is refused, failed or uncertain
-                        S->>E: Attempt safe own-reservation rollback and orphan cleanup
-                        Note over S,E: updates only this attempt's bounded state, never resets prior successes or extends expiry
-                        S-->>UI: Return no confirmed link or success claim
-                        Note over S,E: Keep any possible orphan under its original hard expiration and bounded cleanup
-                    else Write and accounting are confirmed
-                        S->>S: Recheck readiness and deadline before confirmation
-                        alt Final eligibility is unsafe
-                            S->>E: Attempt safe cleanup of this attempt's payload and reservation
-                            S-->>UI: Return no confirmed link or success claim
-                        else Confirmation is eligible
-                            S-->>UI: Send confirmed link and original service-established expiration
-                            alt Browser receives confirmed success
-                                UI-->>U: Show SCR-02 with link and countdown
-                            else Confirmation response is lost or connection ends
-                                UI->>UI: Keep outcome unconfirmed and never automatically resubmit
-                                UI-->>U: Keep input at SCR-01 and explain that creation may have occurred
-                                Note over S,E: Possible unreachable Secret retains original expiration and quota accounting
-                            end
-                        end
+    U->>UI: Explicitly submit valid current form
+    UI->>S: One creation attempt
+    S->>S: Check current recovery run, trusted address and safe time
+    S->>E: Read basic rolling creation count and storage/cardinality capacity
+    alt Dependency uncertain or observed threshold or hard capacity exhausted
+        S-->>UI: Safe refusal, no link, preserve input and existing Secrets
+    else Basic admission allows attempt
+        Note over S,E: No quota reservation or lease, simultaneous requests may overshoot nominal quota
+        S->>S: Prepare token and optional verifier under retained hard work cap
+        S->>M: INSERT immutable database creation/expiration timestamps
+        alt Metadata failed or uncertain
+            S-->>UI: Stop before payload publication, no automatic retry
+        else Metadata confirmed
+            S->>E: Publish payload with original hard deadline and bounded success history
+            alt Publication failed or uncertain
+                S->>E: Attempt bounded own-orphan cleanup without changing prior histories
+                S-->>UI: No confirmed URL, original orphan deadline remains
+            else Publication confirmed
+                S->>M: Obtain fresh PostgreSQL time
+                S->>S: Final deadline and readiness check
+                alt Unsafe, expired or dependency failed
+                    S-->>UI: No confirmation, no extension
+                else Still eligible
+                    S-->>UI: Confirm original Share link and deadline
+                    alt Response received and valid
+                        UI-->>U: Show SCR-02
+                    else Response lost or invalid
+                        UI-->>U: Keep SCR-01 form and explain unconfirmed outcome
                     end
                 end
             end
         end
     end
-    opt Sender deliberately retries after refusal or an unconfirmed outcome
-        U->>UI: Request a new creation attempt
-        UI->>S: Submit a new attempt through the same validation and admission gates
-        S->>S: Use a new random token if admitted, never extend or recover the old record
-        Note over S,E: Count each successful new creation without bypassing quota, capacity or uncertain prior accounting
+    opt Sender deliberately retries later
+        U->>UI: New explicit attempt
+        UI->>S: New attempt through the same basic and hard safety checks
+        Note over S,E: New token and PostgreSQL anchor, never extend or recover prior records
     end
-    Note over U,E: Postcondition: only received confirmed success shows SCR-02, otherwise current input remains without automatic retries
 ```
 
-**Admission and failure semantics.** At most 25 successful creations per rolling sixty-second address window and 1000 active Secrets are allowed, with Redis maxmemory 256 MiB/noeviction and at most 10,000 limiter records including reservations. People sharing a public address share its quota. Address/pair state uses temporary keyed pseudonyms, no raw IP logs or durable address records, and is removed no later than five minutes after the last relevant request. Rejected operations do not bypass protection or evict existing state. Parallel requests reserve eligibility before doing expensive work or writing a payload. Exact reservation leases, quota/accounting transitions, uncertainty reconciliation and successful-creation timestamp publication remain §11 obligations: an unknown result must not be counted as a proven failure and used to free a slot that could permit quota overshoot. Safe cleanup may be attempted but is not proof of absence after a timeout. Durable lifecycle metadata is retained under the approved policy, not deleted as payload rollback. S7 supplies recovery gating and bounded expiration cleanup. A manual retry is a new creation, not deduplication, recovery or an extension of any earlier lifetime.
+**Admission and failure semantics.** Basic admission checks 25 observed successes per rolling sixty-second address window; already-admitted concurrent requests can overshoot. Keep 1000 active Secrets, Redis 256 MiB/noeviction and 10000 transient counter identities, with safe refusal rather than eviction. Address/pair state uses retained keyed pseudonyms and expires within five minutes of last relevant request. No v1 quota reservations/leases or pending-slot registry exists. Known refusal yields no link; uncertain writes do not prove absence, and every possible payload retains its original hard deadline. Immutable metadata is not deleted as rollback. Manual retry is a fresh attempt, never recovery or extension.
 
 ### S3. Open a neutral gate and resolve safe lifecycle states
 
@@ -517,7 +447,7 @@ sequenceDiagram
 
 **Status boundaries.** Neutral status does not decrement a view count, verify a Reading code, change expiration or persist a recipient identity. Read-only availability inspection is not permission to serialize payload fields into a status response, neutral HTML, preview, logs or cache. All status responses and sensitive routes remain noncacheable under §8. A status success is not a reservation or guarantee of later readability: S4 independently rechecks lifecycle, payload, authorization and time. Known expired metadata can produce an explicit expired state without Redis payload access while the service is otherwise ready. It does not bypass S7's closed recovery gate or turn a required dependency failure into an alternative disclosure path. A still-unexpired lost payload may follow crash/restart and cannot be restored from metadata. No read or status visit recovers an old Secret, and concurrent visitors do not compete for a view allowance. SCR-05 explains limits through S6. No new participant or persistence operation is introduced by this read-only flow.
 
-### S4. Explicit disclosure and concurrency-safe Reading code verification
+### S4. Explicit disclosure with basic code limits and hard work bounds
 
 Coverage: US-03, US-04 and US-05; AC-06 exact comparison, AC-07, AC-08 and AC-10 pre-release check. Screen path: explicit Show from SCR-03, with eligible content handed to S5 only on success. Status: confirmed in prose by Product Owner.
 
@@ -529,86 +459,63 @@ sequenceDiagram
     participant S as service
     participant M as data-store (lifecycle)
     participant E as data-store (ephemeral)
-    Note over U,E: Precondition: neutral gate has disclosed no Secret and a link is not consumed by reads
-    U->>UI: Enter Reading code if required and explicitly choose Show
-    UI->>S: Request disclosure with token and exact optional code over protected transport
-    S->>S: Check token shape, request bounds, readiness, clock safety and trusted client address
-    alt Request is invalid or readiness is unsafe
-        S-->>UI: Return safe no-content refusal with appropriate unavailable or temporary-failure state
-    else Request is eligible for lifecycle lookup
-        S->>M: Resolve known lifecycle by token digest
-        M-->>S: Return lifecycle or failure
-        alt Lifecycle lookup fails or metadata is invalid
-            S-->>UI: Return temporary service failure without Secret or code-mismatch claims
-        else Link is unknown or already expired
-            S-->>UI: Return safe unknown or explicit expired state without code verification
-        else Known lifecycle is strictly unexpired
-            S->>E: Read eligible payload and optional code-verifier state without consuming it
-            E-->>S: Return eligible record, missing record, corrupt record or failure
-            alt Ephemeral dependency fails or times out
-                S-->>UI: Return temporary service failure without content or a code-mismatch claim
-            else Payload is missing, expired or corrupt
-                S->>S: Classify safe unavailable or expired state using lifecycle and current service time
-                S-->>UI: Return no-content state without recovery or code verification
-            else Eligible record is valid
-                alt Record does not require a Reading code
-                    S->>S: Mark this request authorized without creating a code-failure counter
-                else Required code is absent
-                    S-->>UI: Ask for required code without revealing content or consuming the link
-                else Required code is supplied
-                    S->>E: Atomically prune elapsed failures and reserve an eligible link-address verification slot
-                    Note over S,E: persists bounded pair reservation using temporary keyed address pseudonym, never plaintext code
-                    E-->>S: Return confirmed reservation, pair limit, resource refusal or uncertainty
-                    alt Five failures remain within rolling sixty seconds or in-flight slots occupy the remainder
-                        S-->>UI: Refuse verification temporarily without starting expensive hash work
-                        Note over S,E: Do not add a failure timestamp or extend the window for this refusal
-                    else Limiter capacity, reservation certainty or bounded hash-work admission is unavailable
-                        S->>E: Attempt safe release of any own reservation without clearing prior failures
-                        S-->>UI: Return safe temporary refusal without content or expensive verification
-                    else Pair reservation and bounded hash-work admission are confirmed
-                        S->>S: Verify exact code against salted password-hard hash without trimming or normalization
-                        alt Verification fails internally or verifier state is corrupt
-                            S->>E: Safely reconcile own reservation without fabricating a wrong-code result
-                            S-->>UI: Return safe no-content failure without internal details
-                        else Code is incorrect
-                            S->>E: Atomically replace own reservation with a failed-verification timestamp
-                            Note over S,E: persists rolling pair failure state, bounded in cardinality and retention
-                            E-->>S: Return accounting outcome
-                            S-->>UI: Return safe wrong-code result only if accounting is confirmed, otherwise temporary failure
-                            Note over U,E: Never invalidate the link or block other addresses because this pair failed
-                        else Code is correct
-                            S->>E: Atomically release own in-flight slot without clearing other failed attempts
-                            E-->>S: Return reservation-completion outcome
-                            alt Reservation completion is failed or uncertain
-                                S-->>UI: Return temporary no-content failure
-                            else Reservation completion is confirmed
-                                S->>S: Mark only this request authorized
+    U->>UI: Explicit Show with optional exact code
+    UI->>S: Disclosure request, never automatic retry
+    S->>S: Validate token, scalar code, body and current address/readiness
+    alt Invalid request or unsafe context
+        S-->>UI: Safe no-content refusal, no hash or incorrect-code increment
+    else Request eligible for lookup
+        S->>M: Resolve lifecycle and fresh PostgreSQL time
+        alt Unknown or expired or dependency unsafe
+            S-->>UI: Unavailable, expired or temporary refusal, never fragments
+        else Known and unexpired
+            S->>E: Read and validate ephemeral payload/verifier
+            alt Missing payload or corrupt/dependency failure
+                S-->>UI: Safe unavailable or temporary result, not wrong code
+            else Valid payload
+                alt Code not required
+                    S->>S: Authorize only this response subject to final checks
+                else Code required but absent
+                    S-->>UI: code_required, no failed verification
+                else Code supplied within byte bound
+                    S->>E: Check basic rolling pair failure counter
+                    alt Five failures already observed
+                        S-->>UI: verification_limited, no hash or new failure
+                    else Basic pair check permits
+                        S->>S: Acquire shared hard hash-work permit, no waiting queue
+                        alt Work capacity unavailable
+                            S-->>UI: capacity_unavailable, not incorrect code
+                        else Work admitted
+                            S->>S: Verify exact code asynchronously
+                            Note over S,E: Admitted concurrent attempts may overshoot five, no quota reservations
+                            S->>S: Release permit only after actual native completion
+                            alt Incorrect code
+                                S->>E: Atomically append bounded actual failure history
+                                S-->>UI: code_incorrect only after confirmed accounting, otherwise safe temporary refusal
+                            else Correct code
+                                Note over S,E: Do not clear prior failures or consume the link
                             end
                         end
                     end
                 end
-                opt This request is authorized and no previous branch returned a refusal
-                    S->>E: Recheck eligible payload availability after asynchronous verification work
-                    E-->>S: Return current eligible payload state or safe failure
-                    alt Record is unavailable or dependency check fails
-                        S-->>UI: Return safe no-content state, distinguishing temporary failure from known loss
-                    else Record remains valid and available
-                        S->>S: Construct bounded nonstreaming response and check readiness and time immediately before release
-                        alt Readiness, clock safety or strict unexpired deadline check fails
-                            S-->>UI: Refuse release without Secret content, even with a correct code
-                        else Final release remains authorized and strictly unexpired
-                            S-->>UI: Release exact Secret with service timing and expiration as noncacheable data
-                            UI->>UI: Apply S5 and S6 checks before any display or copy
-                        end
+                opt This response is authorized and accounting/readiness remain safe
+                    S->>M: Obtain fresh PostgreSQL time after asynchronous work
+                    S->>E: Confirm current eligible payload without extending expiry
+                    S->>S: Final fresh-time, current-run and strict deadline guard
+                    alt Expired or unsafe or payload no longer available
+                        S-->>UI: Safe no-content expiry/unavailable/temporary refusal
+                    else Still eligible
+                        S-->>UI: Exact Secret, original expiration and service timing
+                        UI->>UI: Discard late/stale response, otherwise show SCR-04 within deadline
                     end
                 end
             end
         end
     end
-    Note over U,E: Postcondition: refusals reveal no fragments, only eligible requests release content, reads never consume or extend a link
+    Note over U,E: All refusal branches terminate that attempt, no persistent authorization
 ```
 
-**Concurrent-attempt semantics.** Each link/address pair admits no more in-flight verifications than its remaining failure allowance, so simultaneous wrong codes cannot overshoot five failed verifications in any rolling sixty-second window. Occupied in-flight slots may temporarily refuse even a correct attempt without running its hash. As old failure timestamps leave the window, slots become eligible again without a permanent or link-wide lockout. A refusal does not reset or extend those timestamps, and a successful verification does not erase other failures. Other addresses use independent pairs, while people behind the same public address share a pair. Global bounded hash work and its queue remain necessary against distributed attempts, not merely the per-pair check. Only salted verification hashes are stored, never plaintext submitted codes. Limiter state and reservations remain under §8's global cardinality and five-minute retention bounds. Exact lease expiry, crashed/uncertain in-flight reconciliation, code/request bounds, hash library/cost and key rotation/restart continuity remain §11 decisions: abandoned reservations must not allow still-running work to bypass the failure limit. Dependency or accounting uncertainty fails closed and is not mislabeled as an incorrect code. Every failure branch terminates that disclosure attempt before subsequent authorization/release steps. Code success grants no recipient identity, durable authorization or automatic Show on later visits. No new participant is introduced.
+**Concurrent-attempt semantics.** Check the basic rolling pair counter before hashing and deny when five failures are observed. Already-admitted concurrent guesses may exceed five; ADR-0009 explicitly defers exact quota reservations, leases and cross-process fencing to backlog T22. Keep atomic counter updates, no failure timestamp on rejected requests, no previous-failure reset on success, no link consumption and independent address pairs. The global two-native-call/no-queue bound remains hard, including distributed attempts; a timed-out/disconnected native call retains its permit until completion. Invalid input, capacity refusal and dependency uncertainty are not fabricated incorrect-code failures. Only a correct code plus final payload/readiness/PostgreSQL-time checks authorizes that response.
 
 ### S5. Display and copy exact text, with repeat and concurrent reading
 
@@ -742,7 +649,7 @@ sequenceDiagram
     Note over U,S: Postcondition: no late normal-application display or automatic stale restoration, and no claim of external revocation
 ```
 
-**Time and lifecycle obligations.** The countdown is presentation, never permission to bypass S4's final service-side release check. Device wall-clock changes cannot extend the lifetime. Every asynchronous display/copy completion and page-lifecycle return must be fenced against stale requests and checked before it can affect visible Secret state. On return this flow deliberately uses the existing neutral gate and fresh Show instead of silently restoring old plaintext, consistent with the confirmed UX return path. No new account, screen, background network dependency for active offline hiding or external credential integration is introduced. If safe time cannot be established after suspension, content stays concealed until neutral revalidation and a fresh explicit Show succeed. Exact clock-source, sleep/discontinuity detection and conservative-deadline calculations remain §11 pre-implementation obligations, with browser/network profiles fixed before plan-tests. Browser lifecycle behavior, including back-forward cache, must be tested rather than inferred from headers. No guarantee is made against a modified client, recipient-controlled copies or physical RAM forensics. Stored payload cleanup is a separate S7 obligation, not something SCR-05 proves.
+**Time and lifecycle obligations.** The countdown is presentation, not permission. PostgreSQL-derived expiration and fresh service timing govern final release and conservative browser deadlines; device wall-clock changes cannot extend the window. Hide locally offline and on background/pagehide/freeze; invalidate stale asynchronous display/copy callbacks. On return, stay concealed until neutral revalidation and a fresh explicit Show. T8/T12 own runtime clock/transit/sleep tests before serving; representative profiles remain due before plan-tests. No promise covers modified clients or Recipient copies.
 
 ### S7. Bounded cleanup and recovery before serving
 
@@ -754,70 +661,41 @@ sequenceDiagram
     participant S as service
     participant M as data-store (lifecycle)
     participant E as data-store (ephemeral)
-    Note over S,E: Precondition: one service owns cleanup, ephemeral payload storage has no disk persistence or backups
-    S->>S: Receive scheduled five-second cleanup tick or startup or recovery trigger
-    S->>S: Check maintenance-run idempotency key and current ownership before handling trigger
-    alt Trigger duplicates a completed or currently owned run
-        S->>S: Skip duplicate work without treating a stale completion as recovery readiness
-    else This run may proceed
-        alt Startup, reconnection, store identity change or runtime or clock discontinuity
-            S->>S: Close Secret traffic readiness and fence previous serving eligibility
-            Note over S,E: Restart begins unready, never inherits readiness from an earlier process or store identity
-        else Regular cleanup tick
-            S->>S: Check current readiness, safe time and cleanup health
-            opt Cleanup bound cannot be assured or safe time has been lost
-                S->>S: Close Secret traffic readiness before serving can resume
+    S->>S: Scheduled five-second tick or startup/recovery/discontinuity trigger
+    alt Duplicate, completed or stale run
+        S->>S: Skip, stale callbacks cannot authorize a newer run
+    else Current single-process maintenance run
+        S->>S: Close Secret traffic when starting or safety is uncertain
+        S->>M: Check dependency and fresh PostgreSQL time
+        S->>E: Check store identity and due expiry/counter state
+        alt Redis cannot clean or time unsafe
+            S->>S: Stay closed and report aggregate failure
+        else Cleanup can execute
+            loop Bounded due batches without unbounded scans
+                S->>E: Delete expired payload/verifier records and due counter state
+                E-->>S: Confirm deletion or safe failure
             end
-        end
-        S->>M: Check lifecycle dependency health without reading or restoring Secret content
-        M-->>S: Return metadata dependency health or failure
-        S->>E: Check ephemeral store identity and health under the current recovery gate
-        E-->>S: Return health and identity or failure
-        alt Ephemeral storage cannot execute cleanup or authoritative time is unsafe
-            S->>S: Keep readiness closed and record aggregate maintenance failure only
-        else Ephemeral storage and safe time permit bounded maintenance
-            Note over S,M: Lifecycle dependency failure keeps serving closed but does not stop executable expiration cleanup
-            loop Bounded expiration-indexed batches while due records remain
-                S->>E: Select due payload and verifier records using authoritative expiration
-                E-->>S: Return due record handles or a batch failure without logging content
-                S->>E: Idempotently delete due payloads and verifiers and reconcile associated expired reservations
-                Note over S,E: removes active ephemeral Secret and verifier records without deleting durable lifecycle metadata
-                E-->>S: Confirm deletion and bounded reservation reconciliation or report failure
-            end
-            S->>E: Remove due temporary limiter state within its retention bound and check remaining maintenance debt
-            Note over S,E: updates bounded temporary admission state without discarding active quota or in-flight safety state
-            E-->>S: Confirm maintenance result or report failure
-            Note over S,E: Retry retryable failures at most N times with backoff within the active-cleanup deadline
-            alt A batch or reconciliation fails and retry budget is exhausted
-                S->>S: Enter dead-letter failure state for this maintenance run without retaining Secret material
-                S->>S: Keep readiness closed and emit aggregate operational alert
-                Note over S,E: No payload-bearing retry queue or separate message bus is introduced
-            else A batch or reconciliation remains unresolved within its retry budget
-                S->>S: Keep recovery readiness closed and retry bounded idempotent work
-                Note over S,E: Backoff never extends expiration or the sixty-second deletion obligation while cleanup can execute
-            else Maintenance is confirmed complete for the current recovery gate
-                S->>S: Recheck safe time, dependency identity and absence of expired active records before reopening
-                alt State changed or expired maintenance debt remains
-                    S->>S: Keep readiness closed and repeat bounded maintenance under a current run
-                else Recovery checks still hold
-                    S->>S: Mark this maintenance run complete and permit Secret traffic readiness
-                    Note over S,M: Retain only approved lifecycle digest and timestamps indefinitely
+            alt Cleanup fails or cannot meet active deletion bound
+                S->>S: Stay closed, bounded retry only within deletion budget, aggregate alert
+            else Cleanup confirmed
+                alt PostgreSQL unavailable or time/current-run changed
+                    S->>S: Stay closed, continue executable Redis cleanup
+                else Continuity lost or key rotation
+                    S->>S: Ensure previous owner stopped, observe inherited sixty-second quiet interval
+                    S->>S: Repeat on discontinuity, timer alone never reopens traffic
+                end
+                opt Dependencies, safe time, cleanup and continuity checks all confirmed
+                    S->>S: Reopen only this current recovery run
                 end
             end
         end
     end
-    opt Crash or restart has erased still-unexpired ephemeral payloads
-        Note over S,E: Start ephemeral storage empty, never restore payloads or code verifiers from backup
-        S->>M: Preserve or restore only approved lifecycle metadata
-        M-->>S: Return known lifecycle timestamps without Secret recovery
-        Note over S,M: Subsequent S3 and S4 show early unavailability before expiry and explicit expiration afterward
-    end
-    Note over S,E: Postcondition: expired data is never released, and recovery cannot serve Secret traffic until expired active records are cleared
+    Note over S,E: No quota leases, pending-slot reconciliation, payload restore or physical RAM-erasure claim
 ```
 
 **Asynchronous maintenance and failure handling.** The service's own scheduled loop is the trigger and handler, not an external scheduler, message bus or worker surface. Check a run identity/ownership key first to suppress duplicate runs, while idempotent deletion and current recovery fencing make replay safe. A completed old run must never authorize a newer recovery generation. The dead-letter branch means a failed maintenance-run state and aggregate alert inside the existing service, not a durable payload queue or a new datastore entity. N, backoff, run-key/ownership representation and recovery-fencing details are unresolved technical parameters within §11's cleanup/recovery algorithm obligation, not approved numbers or a schema commitment. Retries remain bounded by the active deletion deadline, and exhaustion must not be silently treated as successful cleanup. Continued recovery attempts do not reopen traffic before a confirmed sweep. Alerts and failure records contain no Secret, code, raw token, full URL or address.
 
-**Retention and outage boundaries.** Active Secret/verifier data must be removed within sixty seconds of expiration while Redis can execute cleanup. The five-second tick and TTL are supporting mechanisms, not proof of that bound. A fail-closed readiness gate prevents disclosure but does not itself satisfy deletion: test bounded cleanup and retries under load and faults, and treat an observed deadline breach as a violation. During suspension/hang, there is no physical RAM-erasure deadline. At recovery, expired records clear before Secret traffic resumes, even if they were inaccessible during suspension. No forensic zeroization, recovery of early-lost payloads or erasure of Recipient copies is promised. Metadata-only backup restoration never reconstructs Secret content or a code verifier. Limiter restart/rotation continuity, abandoned in-flight accounting and safe clock discontinuity handling remain explicit §11 blockers rather than guessed behavior.
+**Retention and outage boundaries.** The <=60-second active-record deletion bound remains mandatory while Redis can execute cleanup. TTL, a five-second tick or a fail-closed API alone is not proof; T8/T18 must test cleanup under faults and capacity. No physical RAM-erasure deadline applies during suspension/hang. Startup/recovery closes traffic, establishes current single-process ownership and safe PostgreSQL time, clears expired records and only then reopens. Continue possible Redis cleanup during PostgreSQL outage. Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
 
 **Non-runtime verification for AC-11 and NFR-04.** Audit and canary-test protected transport, proxy/app/datastore/telemetry logging, cache exclusions, metadata-only backups and restore, disabled Redis persistence, swap/dumps and infrastructure snapshot paths as specified in §§7–10. These configuration/security checks are required in addition to the runtime branches above. A diagram, successful deletion or an expired UI does not prove that no sensitive copies reached logs, disks or backups. No new §5 participant is needed and no new ADR is automatically created.
 
@@ -828,17 +706,17 @@ Size M and route standard are read from .size and .route. The flow list and AC c
 | Source | Runtime coverage | Branch or verification boundary |
 |---|---|---|
 | US-01 | S1, S2 | Anonymous creation, validation, confirmed sharing and safe refusal/retry |
-| US-02 | S1, S2, S6 | Whole-minute lifetime, successful-creation anchor and service-derived countdown |
+| US-02 | S1, S2, S6 | Whole-minute lifetime, PostgreSQL-write creation anchor and service-derived countdown |
 | US-03 | S1, S4 | Optional code choice/generation, exact verification and concurrent failure admission |
 | US-04 | S3, S4, S5, S6, S7 | Neutral visits, explicit repeated/concurrent reading, exact copy and early loss |
 | US-05 | S4, S6, S7 | Final release boundary, browser hiding, scoped cleanup and expiration limits |
 | AC-01 | S1, S2 | Confirmed link and expiration only on received success, without registration |
 | AC-02 | S1 | Missing/whitespace-only credential and UTF-8 total above 64 KiB refuse with no link, valid text preserved |
 | AC-03 | S5 | Inert exact text and clipboard strings preserve characters, spaces and line breaks, with safe manual fallback |
-| AC-04 | S1, S2, S3, S5, S6 | Default sixty minutes, every integer from one through 1440, no silent rounding, successful-creation anchor and countdown independent of device wall clock. Exact slider interaction remains a screens obligation |
+| AC-04 | S1, S2, S3, S5, S6 | Default sixty minutes, every integer from one through 1440, no silent rounding, PostgreSQL-write creation anchor and countdown independent of device wall clock. Exact slider interaction remains a screens obligation |
 | AC-05 | S1 | Fractional/out-of-range lifetime refuses creation with explained bounds |
 | AC-06 | S1, S4 | Optional code, six Unicode code-point minimum, longer codes, nonblocking weak-code guidance, secure twenty-character generator, separate handover and exact comparison. Resource budget follows Accepted ADR-0006; T21 calibration remains |
-| AC-07 | S4 | No fragments on missing/wrong code, salted verifier only, atomic concurrent attempt reservation, rolling five-failure pair window, no refusal extension or permanent/link-wide consumption |
+| AC-07 | S4 | No fragments on missing/wrong code, salted verifier only, basic rolling five-observed-failure pair check, acknowledged concurrent overshoot, no refusal extension or permanent/link-wide consumption |
 | AC-08 | S3, S4, S5 | Every visit is neutral until explicit Show, no account, repeat/concurrent reading allowed without consumption |
 | AC-09 | S3 | Known expired original URL stays explicitly expired using retained metadata, unknown safely unavailable, known unexpired missing payload explicitly early-unavailable |
 | AC-10 | S4, S5, S6, S7 | Immediate final service-time check, no late display, offline hiding and concealed resume/revalidation, no recall of already released bytes |
@@ -846,11 +724,11 @@ Size M and route standard are read from .size and .route. The flow list and AC c
 | AC-11b | S3, S7 | Lost unexpired payload reveals nothing, cannot be restored, and requires a new link from Sender |
 | AC-12 | S6 | Explain that expiration neither revokes external credentials nor erases Recipient copies |
 
-**Data-model handoff.** S1/S2 identify a durable lifecycle lookup digest with creation/expiration timestamps, separate ephemeral payload/verifier records, creation quota and capacity reservations. S4 identifies bounded pair failure timestamps and verification reservations. S7 identifies expiration-indexed cleanup and temporary limiter retention/reconciliation. These are schema/access-pattern inputs, not a selected concrete Redis key schema or new permanent maintenance table. Lookup uniqueness, expiration access, concurrency and bounded cardinality must be designed explicitly. No-schema-change N/A does not apply to this greenfield feature, so the standard-route next stage is data-model, not an API skip.
+**Data-model handoff.** Durable LinkLifecycle timestamps are immutable from the PostgreSQL INSERT. Ephemeral payload/verifier storage retains the same expiry; basic bounded creation/failure counter histories have no pending reservation fields. Payload/limiter expiry indexes support bounded cleanup. Exact quota leases/registries are deferred backlog T22; no persistent maintenance table or payload backup is introduced.
 
-**Flagged technical decisions.** No new participant or external integration is introduced. S7's run identity, bounded retries/backoff and terminal aggregate failure state elaborate the existing §11 cleanup/recovery obligation, without authorizing a queue, persistent payload-bearing failure record or a new ADR. Existing §11 decisions on hash/resource budgets, authoritative clock/timestamp publication, atomic accounting and pseudonym rotation/restart continuity remain open. This stage does not waive them or approve implementation readiness. All checks here concern documentation, not executed application/security/performance tests.
+**Flagged technical decisions.** ADR-0008/0009 record the approved time/creation and simplified quota baseline. Runtime clock/deadline, safe publication, cleanup and current-run protections must be implemented/tested before sensitive traffic. Exact concurrent quotas are intentionally deferred, not a hidden pre-scaffold or launch gate. Browser/network profile and actual deployment inputs remain explicit follow-ups. Documentation validation is not an application/security/performance result.
 
-**Structural self-check: PASS.** All five spec §4 user stories and all thirteen spec §5 acceptance criteria have exact coverage-table rows, with valid references to S1–S7 and no omitted or extra source IDs. All seven added flows were confirmed individually in prose. Generic participant declarations/references and balanced control blocks pass structural checks. All eleven Mermaid blocks in this SAD, including the two original sequence seeds and two C4 blocks, parsed and rendered successfully with mermaid-cli and installed Chrome. The seven sequence-s1.png through sequence-s7.png artifacts have verified PNG signatures and nonzero dimensions. No requested Edit/Drop/Save-as-OQ occurred, so there are no edits-log entries. These are documentation-validation results only, not application-test or security-review approval. Proposed commit, not executed: sequences: short-live-path runtime flows.
+**Structural self-check: PASS.** The current ADR-0008/0009 amendment updates creation/admission/disclosure/recovery flows and their prose while retaining all thirteen AC IDs and S1–S7 coverage. All eleven Mermaid blocks parsed and rendered with mermaid-cli 12.0.0 and installed Chrome; refreshed S1/S2/S4/S7 PNG artifacts have valid signatures and nonzero dimensions. Existing historical review/spawn logs describe the earlier design pass, not this later amendment. These checks prove document structure only, not runtime clock, cleanup, quota or security behavior.
 
 ## 7. Deployment view
 
@@ -860,7 +738,7 @@ Size M and route standard are read from .size and .route. The flow list and AC c
 
 PostgreSQL uses a persistent volume and metadata-only backups. Redis has no persistent volume, AOF, RDB save schedule or Secret backups; disable save-on-shutdown and external Redis/VM memory snapshots. Configure the approved 256 MiB Redis maxmemory with noeviction. Secret content and code verifiers must not reach PostgreSQL, logs, disk persistence, backups or monitoring. Host swap and process/core memory dumps are disabled, and VM/host suspend-with-memory or memory-inclusive snapshot paths must be excluded and audited before launch. Metadata backup restoration never restores Secret payloads; Redis starts empty after restart.
 
-**Lifecycle and readiness.** Run an API-owned bounded cleanup loop every five seconds, with expiration-indexed batches and no unbounded scan on a request. TTL provides independent access protection, not evidence of timely active cleanup. Verify the sixty-second active-record deletion bound while cleanup can execute at the approved capacity. On API startup, dependency reconnection, Redis identity change or detected runtime/clock discontinuity, close Secret traffic readiness, check both stores, remove expired records and reconcile bounded reservations before reopening. An unresolved cleanup failure keeps readiness closed. This gates serving rather than promising physical RAM zeroization while infrastructure is hung. Concrete detection/clock rules are §8 obligations and require suspension/recovery tests.
+**Lifecycle and readiness.** Run API-owned bounded cleanup every five seconds. Close traffic on startup/reconnect/unsafe time or runtime discontinuity; establish one current process/run, check dependencies and PostgreSQL time, clear expired payloads and only then reopen. Stale callbacks cannot reopen a newer recovery run; API owners must not overlap. Continue executable Redis cleanup during PostgreSQL outage. Same-key surviving counters remain; continuity loss/key rotation retains old-owner shutdown plus the >=60-second quiet interval and cleanup (ADR-0009). There is no v1 quota-lease reconciliation. T8/T18 must prove the unchanged cleanup/expiry guarantees before launch.
 
 **Monitoring (aggregate only).**
 - Service and dependency readiness, external disposable synthetic creation/read checks, operation latency and failures; use NFR-01/NFR-02 targets without treating configured values as measured results.
@@ -883,18 +761,18 @@ PostgreSQL uses a persistent volume and metadata-only backups. Redis has no pers
 | Authorization / identity | Possession of an unguessable random Share link token, plus the optional Reading code. No accounts, recipient identity/list, JWT/session ownership or consumption on read. Generate tokens with the runtime cryptographically secure random source, never a timestamp/sequence. Exact token encoding/entropy is resolved before tasks. | Spec §6.1; ADR-0003/0005 |
 | Durable lookup | PostgreSQL stores only a non-reversible cryptographic digest of the random link token and lifecycle timestamps. Token digests are not identifiers for low-entropy codes or IPs. No Secret/code/verifier/full link in PostgreSQL or its backups. | ADR-0005 |
 | Reading code verification | Store a salted, password-hard verification hash in ephemeral Redis, never plaintext. Preserve exact Unicode/case/spaces without trimming or normalization; minimum six code points, generated code twenty Latin-letter/digit characters from a cryptographically secure source with unbiased sampling. Bound concurrent hash work and its queue; do not run expensive verification before admission. ADR-0006 accepts Argon2id v19, m=65536 KiB/t=3/p=4, salt 16 bytes/output 32 bytes, two concurrent calls/no queue, code <=1024 UTF-8 bytes/body <=524288 wire bytes as starting values. T1 source-contract sync is complete; T21 post-scaffold calibration remains, without measured performance approval. | AC-06/AC-07; §11 |
-| Wrong-code admission | At most five failed verifications in a rolling sixty-second link/address-pair window. Atomically reserve in-flight verification slots before starting hash work so concurrent attempts cannot overshoot the failure bound; complete/release reservations on success or failure and expire abandoned reservations safely. Reject while all slots are occupied, without extending failure timestamps. No permanent link consumption or link-wide lockout. Bounded reservations and expensive-work admission must also cover distributed attempts. | Approved §4 policy; AC-07 |
-| Creation admission / capacity | Atomically coordinate per-address rolling successful-creation quota, in-flight reservations and global payload capacity in Redis. Maximum 25 successes per rolling sixty seconds/address and 1000 active Secrets. Reservations prevent concurrent overshoot, have bounded leases and cannot extend payload lifetimes. Redis maxmemory 256 MiB/noeviction; any allocation or counter-cap failure rejects safely rather than allowing an unmetered operation. Exact accounting of timeout/uncertain commit paths is required in tests. | NFR-05; §§4/6–7 |
-| IP privacy and counter bounds | Accept forwarded client addresses only from an explicitly configured trusted proxy; never trust an arbitrary incoming forwarding header. Canonicalize addresses consistently and use a keyed cryptographic address digest with a server-held secret, not a bare hash of enumerable IP space. No IP logging or durable address records. Maximum 10,000 active limiter records globally, including pair/address counters and their reservations, removed no later than five minutes after last relevant request. At cap, reject operations requiring a new limiter record rather than bypassing protection; do not evict active safety state. ADR-0007 accepts stable versioned HMAC labels and a fenced >=60s quiet interval on continuity loss/rotation; T2 must supply executable fencing/time mechanics. Actual proxy allowlist and key provisioning are deployment inputs. | Approved §8 package; §11 |
+| Wrong-code admission | Basic rolling failure counter check against five per link/address pair; already-admitted simultaneous guesses may overshoot. No quota reservations, leases, failure reset, link consumption or window extension on rejected requests. Hard global hash-work cap remains. Exact concurrent enforcement is deferred to backlog T22. | ADR-0009; AC-07 |
+| Creation admission / capacity | Basic rolling observed-success check against 25/address; concurrent overshoot is accepted. No quota reservation protocol. Enforce 1000 active payloads and 256 MiB Redis/noeviction at safe publication, preserving immutable PostgreSQL-derived expiry. Unknown writes never create a success claim. | ADR-0008/0009; NFR-05 |
+| IP privacy and counter bounds | Accept forwarded client addresses only from an explicitly configured trusted proxy; never trust an arbitrary incoming forwarding header. Canonicalize addresses consistently and use a keyed cryptographic address digest with a server-held secret, not a bare hash of enumerable IP space. No IP logging or durable address records. Maximum 10,000 active limiter records globally, including pair/address counters and any future reservation units, removed no later than five minutes after last relevant request. At cap, reject operations requiring a new limiter record rather than bypassing protection; do not evict active safety state. ADR-0007 accepts stable versioned HMAC labels and a fenced >=60s quiet interval on continuity loss/rotation; Runtime single-process time/recovery guards remain implementation obligations; exact quota fencing is deferred. Actual proxy allowlist and key provisioning are deployment inputs. | Approved §8 package; §11 |
 | Content and browser state | Render all Secret fields as inert text; never HTML, scripts, clickable auto-navigation or server-side URL fetching. Copy exact text and confirm success only after clipboard success; manual selection remains available while eligible. No localStorage/IndexedDB drafts, session replay or sensitive service-worker caches. | AC-02/AC-03; UX flows |
 | Cache / browser headers | Apply Cache-Control: no-store to status/disclosure/creation responses and sensitive routes; no CDN/proxy/Next.js fetch or route cache for these flows. Referrer-Policy: no-referrer, no third-party analytics and a restrictive self-hosted script policy. Scrub routes before logs/traces, not after collection. Review browser history, back-forward cache and page lifecycle so expired plaintext is never deliberately redisplayed. no-store is not a promise to erase Recipient copies. | NFR-04; §§6–7 |
-| Time, expiry and recovery | Service-owned timestamps and a monotonic deadline drive disclosure/copy eligibility. Backend must reject on unsafe clock discontinuity or stale recovery readiness, rather than extend access after clock rollback. Compare timing before each release and after asynchronous work; cleanup/readiness handles hangs before serving resumes. Browser derives a conservative monotonic deadline from service timing, conceals on background/page lifecycle transitions and revalidates before redisplay. Exact clock-source/discontinuity algorithm and cross-store timestamp publication are pre-task decisions with owner and due in §11. | AC-04/AC-10; ADR-0004; §6 |
+| Time, expiry and recovery | PostgreSQL supplies creation/time; final release after asynchronous work rechecks time/deadline/readiness. Unsafe/backward time closes traffic. Startup/recovery clears expired data before serving; stale current-process callbacks cannot reopen a newer run. Browser uses conservative monotonic deadlines and concealed revalidation. Runtime proof belongs to T8/T12/T18. | ADR-0008; AC-04/AC-10/AC-11 |
 | API errors / corruption | Preserve the baseline { data, meta } success and { error: { code, message, details } } failure envelopes; the api stage assigns codes/statuses. Distinguish safe expired, early-unavailable and unknown states from temporary dependency failures. Wrong-code/corruption outcomes reveal no partial Secret or internal exception details and never consume a link. Validate stored record shape before constructing a response. | Backend architecture; AC-07/AC-09/AC-11b |
 | Logging / observability | Allowlist aggregate fields and route templates at proxy, Next.js, API, Redis/PostgreSQL diagnostics and telemetry exporters. No bodies, credentials, full URLs/raw token paths, codes, client addresses or exception locals. Disable payload-bearing query/command recording, session replay and unredacted error reporting. Synthetic monitoring uses disposable canary values and reports aggregate outcomes. | Revised NFR-04; §7 |
 | Events / workers | Synchronous request/service paths and an API-owned bounded cleanup loop; no queue, event bus or separate worker surface. Cross-store operations are not a distributed transaction. | §§5–7 |
 | Language / accessibility | Artifact prose is English per project settings; UI language and exact browser/network matrix remain product/test-planning decisions. No invented translation or component library; retain 360-pixel minimum, keyboard actions and all minute-level lifetime choices. | NFR-06; spec §8; UX flows |
 
-**Approval boundary.** Product Owner approved the package including the 10,000 limiter-record cap. These are design obligations, not installed libraries, implemented controls or passed security tests. Hash suite/work/input starting values and address/rotation policy are accepted in ADR-0006/0007; calibration is post-scaffold T21. Clock-source/recovery mechanics, safe timestamp publication and executable key-rotation fencing remain owned in §11; they must not be silently guessed during implementation.
+**Approval boundary.** ADR-0008/0009 are Accepted product/architecture choices, not installed code or security/performance evidence. ADR-0009 supersedes ADR-0006/0007 while retaining their input/hash/address/quiet-window protections. Runtime guards remain mandatory implementation work; exact concurrent quota reservations are deferred outside the executable v1 DAG.
 
 ## 9. Architecture decisions
 
@@ -907,8 +785,10 @@ PostgreSQL uses a persistent volume and metadata-only backups. Redis has no pers
 | 0003 | [Use server-readable ephemeral Secrets with an optional Reading code](adr/0003-use-server-readable-ephemeral-secrets-with-optional-reading-code.md) | Accepted; retention amended by 0004 | §4 |
 | 0004 | [Scope ephemeral deletion to running cleanup and gate recovery before serving](adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md) | Accepted | §4 |
 | 0005 | [Persist minimal link lifecycle metadata indefinitely](adr/0005-persist-minimal-link-lifecycle-metadata-indefinitely.md) | Accepted | §4–5 |
-| 0006 | [Bound Argon2id Reading code work and input](adr/0006-bound-argon2id-reading-code-work-and-input.md) | Accepted as starting values; calibration T21 | §§4/8/11 |
-| 0007 | [Canonicalize trusted addresses and fence quota resets](adr/0007-canonicalize-trusted-addresses-and-fence-quota-resets.md) | Accepted policy; executable fencing depends on T2 | §§7/8/11 |
+| 0006 | [Bound Argon2id Reading code work and input](adr/0006-bound-argon2id-reading-code-work-and-input.md) | Superseded by 0009; non-quota profile retained | §§4/8/11 |
+| 0007 | [Canonicalize trusted addresses and fence quota resets](adr/0007-canonicalize-trusted-addresses-and-fence-quota-resets.md) | Superseded by 0009; address/quiet-window policy retained | §§7/8/11 |
+| 0008 | [Anchor lifetime and service time in PostgreSQL](adr/0008-anchor-lifetime-and-service-time-in-postgresql.md) | Accepted | §§4/6/8 |
+| 0009 | [Keep basic limits and defer exact concurrent quotas](adr/0009-keep-basic-limits-and-defer-exact-concurrent-quotas.md) | Accepted | §§4/6/8/11 |
 
 ADR files live under docs/features/short-live-path/adr/ and are indexed above. ADR-0002 is historical and intentionally superseded; its original browser-only requirement is not current.
 
@@ -940,8 +820,8 @@ The following are approved targets and verification obligations, not results. Ta
 
 **QG-5. Creation abuse and overload handling**
 - **When:** An office shares an address while boundary-burst and concurrent creation requests compete for quota, limiter records, payload capacity and memory.
-- **Then (NFR-05, verbatim):** At most 25 successful creations in any rolling 60-second window per network address
-- **How verify:** Test the twenty-fifth success and twenty-sixth attempted success within a rolling window, exact release at the oldest success boundary, simultaneous reservations, store timeouts and manual retries. Assert no quota bypass and no confirmed link on refusal. Verify input remains in the page. Exercise approved active-payload/memory/counter caps and noeviction with deterministic capacity injection; failed allocations must not evict existing Secrets or bypass protection.
+- **Then (NFR-05, verbatim):** Basic admission threshold of 25 successful creations per rolling 60-second network-address window; an exact ceiling under concurrent requests is not promised in v1
+- **How verify:** Test the twenty-fifth success and twenty-sixth attempted success within a rolling window, exact release at the oldest success boundary, basic observed-counter rejection, acknowledged simultaneous-request overshoot, store timeouts and manual retries. Exact concurrent quota ceilings are deferred; still assert no confirmed link on refusal. Verify input remains in the page. Exercise approved active-payload/memory/counter caps and noeviction with deterministic capacity injection; failed allocations must not evict existing Secrets or bypass protection.
 
 **QG-6. Accessible interface**
 - **When:** Sender and readers use narrow mobile and desktop screens and keyboard-only primary flows.
@@ -950,8 +830,8 @@ The following are approved targets and verification obligations, not results. Ta
 
 **QG-7. Domain and safety invariants (acceptance criteria and approved design budgets, not new NFR targets)**
 - **When:** Multiple people receive the same link and optional code, repeatedly/concurrently read exact multiline credentials, encounter wrong codes, reload or revisit expired/early-lost/unknown links.
-- **Then:** No recipient identification or read consumption; exact UTF-8 field contents and line breaks; neutral initial gate and explicit Show; five failed code verifications per rolling minute per link/address pair without permanent lockout; 1000 active Secrets, 256 MiB Redis and 10,000 limiter records with safe refusal; limiter records removed within five minutes of the last relevant request. PostgreSQL retains minimal lifecycle metadata indefinitely for now. Confirmation/reading show remaining lifetime and known expired URLs show an explicit expired state, not a missing-page/404 experience. These values come from AC-02/AC-06/AC-07/AC-09 and approved §§4–8, not an invented NFR-01 target.
-- **How verify:** Byte-for-byte multibyte/multiline round trips and clipboard assertions, generation/code exactness tests, parallel verifications with in-flight reservations, mocked memory/counter exhaustion and retention checks, known-expired versus unknown versus early-lost versus dependency-failure UI tests. Confirm lost creation responses never trigger automatic retry or extend old expiry and that any unreachable record follows the same cleanup policy. Review backup contents and metadata restoration separately from forbidden payload recovery.
+- **Then:** No recipient identification or read consumption; exact UTF-8 field contents and line breaks; neutral initial gate and explicit Show; a basic five-failure rolling-minute link/address threshold without permanent lockout and without an exact concurrent ceiling; 1000 active Secrets, 256 MiB Redis and 10,000 limiter records with safe refusal; limiter records removed within five minutes of the last relevant request. PostgreSQL retains minimal lifecycle metadata indefinitely for now. Confirmation/reading show remaining lifetime and known expired URLs show an explicit expired state, not a missing-page/404 experience. These values come from AC-02/AC-06/AC-07/AC-09 and approved §§4–8, not an invented NFR-01 target.
+- **How verify:** Byte-for-byte multibyte/multiline round trips and clipboard assertions, generation/code exactness tests, basic pair checks, acknowledged concurrent overshoot and hard global work admission, mocked memory/counter exhaustion and retention checks, known-expired versus unknown versus early-lost versus dependency-failure UI tests. Confirm lost creation responses never trigger automatic retry or extend old expiry and that any unreachable record follows the same cleanup policy. Review backup contents and metadata restoration separately from forbidden payload recovery.
 
 **Measurement status.** None of these tests has run against an application: no source/runtime exists yet. The sequences, plan-tests and implementation stages must turn these obligations into AC-citing tests and report real execution. Test profiles and security/performance parameter decisions remain owned in §11; no hidden acceptance downgrade is implied.
 
@@ -966,19 +846,19 @@ The following are approved targets and verification obligations, not results. Ta
 | One host/dependency failure stops disclosure; Redis restart loses still-valid payloads | High | Accepted v1 trade-off, not a recovery promise. Fail closed on dependency failure, retain minimal lifecycle metadata, monitor NFR-02 and test early-unavailable UI. Review before launch; no HA claim. | Tech Lead responsibility: Product Owner and coding agent |
 | Indefinite lifecycle metadata growth and pseudonymous activity retention | Medium | Monitor PostgreSQL disk growth and metadata-only backup scope. No automatic retention deletion is currently authorized; revisit by explicit product decision if growth/privacy needs change. | Product Owner |
 | Short or reused codes and distributed guessing | High | Recommend generated twenty-character code; retain approved six-code-point minimum, exact comparison, five-failure pair window and bounded verification. Do not claim strong protection merely from minimum length or per-address throttling. Security review before implementation. | Security responsibility: Product Owner and coding agent |
-| Partial creation leaves unreachable metadata/payload or occupied reservation | Medium | No automatic retry or unconfirmed link; bounded reservations and orphan expiration, no lifetime extension, fail closed on uncertain writes. Verify cross-store failure injection before launch. | Backend responsibility: coding agent with Product Owner review |
+| Partial creation leaves unreachable metadata/payload | Medium | No automatic retry or unconfirmed link; hard orphan expiration and bounded cleanup, no lifetime extension, fail closed on uncertain writes. Verify cross-store failure injection before launch. | Backend responsibility: coding agent with Product Owner review |
 | Payload leakage through proxy/app/datastore logs, swap, dumps or infrastructure snapshots | High | Allowlisted telemetry, no payload logging/backups, no Redis persistence and audited host retention controls. Canary scans and recovery tests before launch; do not infer controls from Compose settings alone. | Tech Lead / security responsibility |
-| Browser timer suspension, back-forward cache or backend clock rollback permits stale display/release | High | Conservative service-derived deadlines, no content redisplay before recheck, final release checks and closed recovery readiness. Resolve algorithm before implementation and test discontinuities/suspension. | Backend/frontend responsibility: coding agent with Product Owner review |
+| Browser timer suspension, back-forward cache or backend clock rollback permits stale display/release | High | Conservative service-derived deadlines, no content redisplay before recheck, final release checks and closed recovery readiness. Resolve algorithm in T8/T12 before sensitive traffic and test discontinuities/suspension. | Backend/frontend responsibility: coding agent with Product Owner review |
 | Baseline documents assume separate repositories, PostgreSQL as sole truth and Redis cache only | Medium | Explicit approved exceptions in §§2/4–5 and ADR-0003/0005: one repository, PostgreSQL for durable metadata, Redis for ephemeral content. Align application-specific baseline exception sections before scaffolding. Do not silently replace the baseline or invent installed dependencies. | Tech Lead responsibility |
 | Accepted code hash/input/work baseline; calibration and implementation verification pending | Verification obligation | ADR-0006 starting values are explicitly accepted. T1 source synchronization is complete; T3 pins versions/build and T21 benchmarks after scaffolding, before final T20. Security/load evidence remains required, not inferred from acceptance. | Security responsibility: Product Owner and coding agent |
-| Open architectural decision: authoritative clock, creation timestamp publication across PostgreSQL/Redis, atomic quota/capacity accounting and failure cleanup | Open question | Resolve before implementation begins, with concrete state transitions before executable tasks. Verify successful-creation time anchor, no late release, concurrent admission and reservation/orphan cleanup; no distributed atomicity is assumed. | Backend responsibility: coding agent with Product Owner review |
-| Accepted trusted-address/HMAC/continuity policy; concrete deployment and T2 integration pending | Verification obligation | ADR-0007 policy is accepted. T1 source synchronization is complete; T2 specifies executable fencing/time integration, and deployment pins/verifies the real proxy allowlist and key custody. Preserve five-minute retention/10,000-record cap and prevent quota resets/bypass. | Backend/security responsibility: coding agent with Product Owner review |
+| Approved PostgreSQL creation/time baseline; runtime guards and deferred exact quotas | Verification obligation / accepted debt | ADR-0008 resolves creation anchor and time source; T7/T8/T9/T12 verify publication, deadline and recovery. ADR-0009 defers exact quota leases/overshoot prevention to backlog T22; not a scaffold or launch gate. | Backend/frontend responsibility; Product Owner owns revisiting scope |
+| Retained trusted-address/HMAC/quiet-window policy; runtime and deployment verification pending | Verification obligation | ADR-0009 retains the address/key/quiet-window rules. T8/T12 verify time/recovery and deployment pins/verifies the real proxy allowlist and key custody. Preserve five-minute retention/10,000-record cap and prevent quota resets/bypass. | Backend/security responsibility: coding agent with Product Owner review |
 | Open architectural decision: representative browser/version, hardware and network measurement profile | Open question | Resolve before plan-tests; preserve NFR-01/NFR-06 targets verbatim and define workload/address mix without conflating intended rate rejection with throughput failure. UI language is also selected before screens content approval. | Tech Lead / Product Owner |
 | Open architectural decision: lifetime slider hour-snapping with every minute available | Open question | Resolve before screens approval; retain default sixty minutes, all whole-minute choices through the approved maximum, mobile/keyboard operation and no silent rounding. | Designer responsibility: Product Owner and coding agent |
 
 **Accepted debt (v1):** single-host availability; potential early payload loss and unreachable duplicate creations; indefinitely retained minimal lifecycle metadata; no history, payload recovery, distributed delivery transaction, deduplication, native client or management/account workflow. These are explicit scope/trade-offs, not excuses to weaken expiration, exact text, limiter or no-sensitive-log/backup rules.
 
-**Readiness.** Product Owner accepted these risks and owners/due triggers in the design dialogue. Technical owners are responsibilities shared by Product Owner and coding agent, not assertions that additional staff or an independent security reviewer exists. The architectural direction is documented; security-sensitive technical decisions above remain unresolved, so this SAD is a draft and does not authorize implementation with guessed parameters. Infrastructure controls are verified before launch, browser/network profile before plan-tests and slider behavior before screens approval. Independent design critic findings are resolved separately below or in the review record.
+**Readiness.** The creation/time and basic-quota policy is approved by Product Owner. T2 documentation closes only after source/task/API synchronization and structural review; no runtime test is implied. Scaffold work may proceed after planning/profile gates. Safe publication, clocks, cleanup, proxy/key configuration and security checks remain implementation/launch obligations; deferred exact reservations do not silently reappear as prerequisites.
 
 ## 12. Glossary
 

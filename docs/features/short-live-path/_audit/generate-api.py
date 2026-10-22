@@ -38,7 +38,7 @@ schemas['Secret']['description'] = ('All three response fields are present; abse
     'JSON Schema string length is NOT this aggregate byte limit. Revalidate stored records before release.')
 schemas['Secret']['x-max-aggregate-utf8-bytes'] = 65536
 schemas['Secret']['x-non-whitespace-fields'] = ['credential']
-schemas['ReadingCode'] = field('string', 'spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0006 input budget',
+schemas['ReadingCode'] = field('string', 'spec AC-06/AC-07; data-model.md DM-OQ-01; ADR-0009 retained input budget',
     'high', maxLength=1024, description='Exact code, including Unicode, case and spaces. Never trim or normalize. '
     'Plaintext travels only in HTTPS request bodies and is never stored or echoed. The create-only minimum '
     'is six Unicode code points; disclosure accepts shorter guesses for normal verification accounting. '
@@ -69,9 +69,9 @@ schemas['DiscloseSecretRequest']['description'] = ('Explicit Show only. Send {} 
     'link. A successful attempt grants only this response, not a session or future automatic disclosure.')
 schemas['ServiceMeta'] = obj({'service_time': field('string',
     'sad.md S1/S3/S4/S6; spec AC-04/AC-10 service timing', 'medium', format='date-time',
-    description='Authoritative service UTC instant sampled for this response, millisecond precision. '
+    description='Authoritative PostgreSQL UTC instant sampled for this response, millisecond precision (ADR-0008). '
     'Conservative monotonic client deadline must account for transit; do not use the device wall clock '
-    'or assume the full expires_at minus service_time remains on arrival. Algorithm blocked by DM-OQ-03.')})
+    'or assume the full expires_at minus service_time remains on arrival. Runtime transit/sleep verification remains T8/T12, not an unresolved source-time choice.')})
 expiry = field('string', 'data-model.md §link_lifecycles.expires_at; §ephemeral_secret.expires_at_ms',
     format='date-time', description='Original authoritative UTC expiration, millisecond precision. Never extended by reads or retries.')
 schemas['ShareLink'] = obj({
@@ -113,12 +113,12 @@ codes = {
     'short_live_path.invalid_request': 'Request shape, exact-text or lifetime/code constraints are invalid.',
     'short_live_path.request_too_large': 'Request body exceeds the permitted wire-byte limit. No link is confirmed.',
     'short_live_path.unsupported_media_type': 'Use uncompressed application/json. Request media type or encoding is unsupported.',
-    'short_live_path.creation_limited': 'Creation quota or in-flight address slots are occupied. Wait before trying manually.',
+    'short_live_path.creation_limited': 'Basic observed creation threshold reached. Wait before trying manually; exact concurrent quotas are deferred.',
     'short_live_path.capacity_unavailable': 'Temporary storage, limiter or bounded work capacity is unavailable.',
     'short_live_path.service_unavailable': 'Service cannot safely complete the operation. No outcome is confirmed.',
     'short_live_path.code_required': 'Enter the separate Reading code.',
     'short_live_path.code_incorrect': 'Reading code is incorrect. The link has not been consumed.',
-    'short_live_path.verification_limited': 'Verification slots for this link and address are temporarily occupied. Wait.',
+    'short_live_path.verification_limited': 'Basic observed failure threshold for this link and address is reached. Wait; exact concurrent quotas are deferred.',
     'short_live_path.link_unavailable': 'Secret is unavailable. Request a new Share link from the Sender; recovery is not available.',
     'short_live_path.link_expired': 'Share link has expired. External credentials and saved copies are not revoked.',
 }
@@ -189,7 +189,7 @@ paths = {
     'are confirmed and readiness/deadline remain safe (S1/S2). No automatic retries, deduplication, history or '
     'Idempotency-Key guarantee. A manual retry is a new attempt with a fresh token/UUID and its own quota gates; '
     'possible earlier records retain original expiry. No code-generation endpoint: generation is browser-local '
-    '(twenty unbiased CSPRNG Latin letters/digits). Successful-creation timestamp publication remains DM-OQ-02.',
+    '(twenty unbiased CSPRNG Latin letters/digits). ADR-0008 anchors immutable creation/expiration at the PostgreSQL INSERT after verifier preparation; commit/write/response delay consumes lifetime, never extends it.',
     'x-user-stories': ['US-01', 'US-02', 'US-03'],
     'x-acceptance-criteria': ['AC-01', 'AC-02', 'AC-03', 'AC-04', 'AC-05', 'AC-06', 'AC-11'],
     'x-sequences': ['S1', 'S2', 'S7'],
@@ -201,7 +201,7 @@ paths = {
            {'created': success({'share_url': 'https://example.test/s/' + TOKEN, 'expires_at': X})}),
       '422': err('Malformed JSON/schema, missing or whitespace-only credential, aggregate text over 65536 UTF-8 bytes, '
                  'invalid integer lifetime, enabled code shorter than six code points, or code over 1024 UTF-8 bytes. No hash, failed-code increment or confirmed link on invalid input.', 'invalid_request'),
-      '429': err('25 successes per rolling 60 seconds/address, or reserved in-flight slots occupy allowance. '
+      '429': err('Basic observed threshold of 25 successes per rolling 60 seconds/address. Concurrently admitted requests may overshoot; no quota reservations in v1. '
                  'Preserve current form input; wait and retry only deliberately.', 'creation_limited'),
       '503': common503,
     },
@@ -231,10 +231,10 @@ paths = {
     'operationId': 'discloseSecret', 'tags': ['Secrets'], 'security': [],
     'summary': 'Explicitly show exact Secret text before expiration',
     'description': 'Only explicit Show triggers this request. No session, identity, consumption or view count; repeat '
-    'and concurrent reading is permitted. Revalidate stored shape and authoritative lifecycle, reserve bounded '
-    'pair/global hash-work admission before verification, and recheck payload/readiness/time after asynchronous '
+    'and concurrent reading is permitted. Revalidate stored shape and authoritative lifecycle, check the basic '
+    'pair counter and acquire the hard process-wide work permit before verification; recheck payload/readiness/PostgreSQL time after asynchronous '
     'work immediately before bounded nonstreaming release. Missing code is not a failed hash attempt. Wrong code '
-    'returns only after failure accounting is confirmed; success releases only its slot, not previous failures. '
+    'returns only after failure accounting is confirmed; success does not erase previous failures. Admitted concurrent attempts may overshoot five; quota reservations/leases are deferred by ADR-0009. '
     'Check conservative monotonic deadline before display/copy; discard late or superseded responses, hide offline '
     'at expiry, conceal on background and require neutral recheck plus fresh Show on return. No automatic retries '
     '(they could spend verification allowance). Never claim remote erasure or external credential revocation.',
@@ -253,7 +253,7 @@ paths = {
        '410': err('Known expiration at any check, including final pre-release check after correct verification. '
                   'Original web URL still renders explicit expiration, not a missing page.', 'link_expired'),
        '422': err('Malformed JSON, unknown fields, null/non-string/non-scalar code, code over 1024 UTF-8 bytes or invalid request shape. No hash or failed-code increment on invalid input.', 'invalid_request'),
-       '429': err('Five failures per rolling 60 seconds/link/address, or reservations occupy remaining slots. '
+       '429': err('Basic observed threshold of five failures per rolling 60 seconds/link/address. Admitted concurrent attempts may overshoot; exact reservations are deferred. '
                   'No hash, new failure timestamp, window extension, link-wide lockout or prior-failure reset.', 'verification_limited'),
        '503': common503,
     },
@@ -287,8 +287,8 @@ contract = {
           'explicit reading before service-established expiration and an optional separate Reading code. '
           'No accounts, history, recovery, early removal, files or external credential revocation. Server-readable '
           'ephemeral Secrets are accepted; minimal lifecycle metadata remains durable. '
-          'T1 policy is synchronized from Accepted ADR-0006/0007. DRAFT: timestamp publication, clocks and executable '
-          'admission/recovery fencing remain blocked by DM-OQ-02 through DM-OQ-04; this is not an executable or finalized '
+          'ADR-0008/0009 approve PostgreSQL-write lifetime and service time, recovery-before-serving and basic observed quotas. '
+          'Exact concurrent quota reservations are deferred to backlog T22, not a v1 launch gate. Runtime verification is pending; this is not an executable or verified '
           'security contract. Sources: data-model.md; sad.md S1-S7; spec.md US-01-US-05 and AC-01-AC-12 (including AC-11b).',
           'x-status': 'Draft'},
  'servers': [{'url': '/', 'description': 'Same-origin API through the HTTPS reverse proxy; no production host invented.'}],
@@ -297,20 +297,26 @@ contract = {
  'x-source-documents': ['../data-model.md', '../sad.md', '../spec.md', '../CONTEXT.md'],
  'x-project-decisions': {
     'error-envelope': 'Product Owner retained {error:{code,message,details}} during api stage.',
-    'trusted-address': 'ADR-0007: only a pinned immediate proxy supplies one sanitized literal address. '
+    'trusted-address': 'ADR-0009 retains ADR-0007: only a pinned immediate proxy supplies one sanitized literal address. '
         'Canonical full IPv6; IPv4-mapped IPv6 shares IPv4 identity. Stable versioned HMAC-SHA-256 labels '
         'use a 32-byte deployment key, never logged or client-supplied. Invalid/untrusted context returns '
         '503 service_unavailable before new limiter state; no public forwarding-header parameter.',
-    'quota-continuity': 'ADR-0007: preserve same-key counters on ordinary API restart. On continuity loss/rotation '
+    'quota-continuity': 'ADR-0009 retains the conservative continuity rule: preserve same-key counters on ordinary API restart. On continuity loss/rotation '
         'close Secret traffic, fence all old mutations, then require at least 60 continuous seconds after the last '
         'possible old mutation plus cleanup/reconciliation. Restart the interval on discontinuity; never infer '
-        'fresh quota from missing state. T2 owns executable time/fencing. No addresses/pseudonyms in logs.',
+        'fresh quota from missing state. T8/T12 verify single-process time/recovery; exact cross-process quota reservations are deferred. No addresses/pseudonyms in logs.',
+    'creation-time': 'ADR-0008: PostgreSQL clock sampled once at lifecycle INSERT, millisecond-aligned. '
+        'Immutable expires_at = created_at + selected minutes; later commit/Redis/response delay consumes lifetime.',
+    'quota-accuracy': 'ADR-0009: basic observed rolling counters at 25 creations/address and five failures/link/address. '
+        'Already-admitted concurrent requests may overshoot; exact reservation/lease guarantees are deferred to backlog T22. '
+        'The two-native-call/no-queue cap, input/storage caps, expiry and privacy are not deferred.',
     'authentication': 'ADR-0003/0005 and SAD §8: public capability token plus optional code; no BearerAuth.',
     'idempotency': 'S2/DM lifecycle semantics: no automatic retry, deduplication or HTTP Idempotency-Key. '
                    'S7 internal run identity does not add HTTP idempotency.',
  },
- 'x-unresolved': ['DM-OQ-02', 'DM-OQ-03', 'DM-OQ-04'],
- 'x-verification-obligations': ['T21 post-scaffold calibration', 'T17 actual proxy/key provisioning', 'T18 security/fault verification'],
+ 'x-unresolved': [],
+ 'x-deferred': ['DM-OQ-04: exact concurrent quota reservations, backlog T22 outside v1 DAG'],
+ 'x-verification-obligations': ['T7 hard-cap payload publication', 'T8/T12 clocks and recovery before sensitive traffic', 'T21 post-scaffold calibration', 'T17 actual proxy/key provisioning', 'T18 security/fault verification'],
  'x-reading-code-work': {'algorithm': 'argon2id', 'version': 19, 'memory-kib': 65536, 'iterations': 3,
                          'parallelism': 4, 'salt-bytes': 16, 'output-bytes': 32, 'concurrency': 2, 'queue': 0},
  'paths': paths,
@@ -358,9 +364,9 @@ Size M, route standard (read from .size/.route). HTTP/REST backend-service is de
 web-frontend in SAD frontmatter. data-model.md, sad.md and spec.md are present. No application,
 manifest, live error registry or application check target exists in this repo; the existing contract is reconciled in place.
 
-DRAFT — wire projection is source-aligned subject to the explicitly inherited DM-OQ blockers below.
+DRAFT — wire projection is source-aligned with the approved ADR-0008/0009 policy and explicit runtime/deferred obligations below.
 No implementation, security, performance, retention or runtime correctness is claimed by contract linting.
-T1 source synchronization applies Accepted ADR-0006/0007 to spec, model, SAD and this contract. Migrations are unchanged. No runtime verification or new commit is claimed by this report.
+Source synchronization applies current ADR-0008/0009 to spec, model, SAD and this contract; ADR-0006/0007 are historical, with their non-quota protections explicitly inherited. Migrations are unchanged. No runtime verification or new commit is claimed by this report.
 
 ## Resolved conventions
 
@@ -430,7 +436,7 @@ report += '''
 | AC-04 | createSecret 201/default 60; status/disclosure service_time + expires_at | S6 conservative monotonic timing; minute-level slider |
 | AC-05 | createSecret 422; integer lifetime bounds | Explain bounds without clamping |
 | AC-06 | createSecret 201/422/413/415; discloseSecret 200/403/422/413/415 | Local generator; nonblocking weak-code advice; no code in URL |
-| AC-07 | discloseSecret 403/422/429/503; transport 413/415 before code work | Pair reservations and salted verifier; no consuming/rebinding link |
+| AC-07 | discloseSecret 403/422/429/503; transport 413/415 before code work | Basic observed pair checks, acknowledged concurrent overshoot, hard global work bound and salted verifier; no consuming/rebinding link |
 | AC-08 | getSecretStatus 200; discloseSecret 200 | Initial/repeat neutral page; no automatic Show or consumption |
 | AC-09 | getSecretStatus 200 unknown/expired/early_unavailable; discloseSecret 409/410 | Original browser URL shows state, never a missing-page experience |
 | AC-10 | discloseSecret 410/503 final check; status revalidation | S5/S6 late-response discard, offline hide, concealed resume |
@@ -448,7 +454,7 @@ API responses support but do not themselves prove browser-only or infrastructure
 | S1 code disabled/chosen/generated | optional reading_code; local generator, no generator endpoint |
 | S1 content/lifetime/code invalid | createSecret 422 invalid_request |
 | S1/S2 ready/clock/dependency unsafe | createSecret 503 service_unavailable |
-| S1/S2 address quota/reservations occupied | createSecret 429 creation_limited |
+| S1/S2 observed creation threshold reached | createSecret 429 creation_limited |
 | S2 payload/limiter/memory/work capacity | createSecret 503 capacity_unavailable |
 | S1/S2 admission/preparation/metadata/payload/accounting failure or uncertainty | createSecret 503 service_unavailable; no link, no automatic retry |
 | S1/S2 final eligibility unsafe | createSecret 503; no confirmed link even if orphan exists |
@@ -468,9 +474,9 @@ API responses support but do not themselves prove browser-only or infrastructure
 | S4 malformed/unknown token | 409 link_unavailable; malformed stops before lookup |
 | S4 no required code | authorize only current request; final checks still mandatory |
 | S4 required code absent/incorrect with confirmed accounting | 403 code_required / code_incorrect, no payload |
-| S4 pair failures or in-flight slots occupy allowance | 429 verification_limited, no hash/window extension |
+| S4 observed pair failure threshold reached | 429 verification_limited, no hash/window extension |
 | S4 limiter/hash-work capacity exhausted | 503 capacity_unavailable, no expensive work or protection bypass |
-| S4 reservation uncertainty, verifier internal error, accounting/completion failure | 503 service_unavailable, no fabricated wrong-code result |
+| S4 basic counter uncertainty, verifier internal error or completion failure | 503 service_unavailable, no fabricated wrong-code result |
 | S4 correct code and confirmed completion | recheck payload/readiness/clock then 200/409/410/503, no durable authorization |
 | S4 final eligible bounded nonstreaming release | 200 exact Secret + original expires_at + service timing |
 | S5 invalid/stale/concealed/late response | UI discards, not another HTTP endpoint/status |
@@ -490,15 +496,15 @@ an HTTP 404 web page. Intermediaries must apply the same noncacheable/sanitized 
 
 ## Inherited open decisions — finalization gate
 
-T1 is synchronized from explicitly Accepted ADR-0006/0007. Remaining T2 decisions below are not waived. No runtime correctness follows from source synchronization.
+ADR-0008/0009 approve the reduced v1 baseline; exact quota reservations are explicitly deferred, not a hidden scaffold/launch gate. No runtime correctness follows from source synchronization.
 
 | ID | Contract impact | Owner / due |
 |---|---|---|
 | DM-OQ-01 | RESOLVED initial policy: ADR-0006 code/work/body budgets and safe 413/415/422/503 projection synchronized. No runtime limit or performance has been measured. | Calibration T21 after T3; final performance T20 |
-| DM-OQ-02 | Successful-creation anchor and final timestamps across PostgreSQL then Redis. Matching DTO timestamps alone cannot prove exact lifetime from successful creation. | Backend with Product Owner (data-model/design), before contract finalization and executable tasks |
-| DM-OQ-03 | Safe authoritative/monotonic timing, transit-aware client deadline, discontinuity detection, cleanup batches/retry budgets and current-run fencing. | Backend/frontend (design/sequences), before contract finalization and executable tasks |
-| DM-OQ-04 | Admission leases/fencing, bounded uncertain/OOM accounting and recovery; no late commit after releasing slots. | Backend (data-model/design), before contract finalization and executable tasks |
-| DM-OQ-05 | RESOLVED policy: ADR-0007 trusted-address/HMAC/quiet-interval semantics synchronized; no public IP/header fields. Concrete executable fencing remains T2 and actual proxy/key configuration remains deployment work. | T2 integration; T17/T18 configuration/security verification before launch |
+| DM-OQ-02 | RESOLVED by ADR-0008: lifetime starts at PostgreSQL INSERT; confirmation delay reduces usable time, no final timestamp publication. | T9 implements/tests metadata/payload/confirmation failure vectors |
+| DM-OQ-03 | APPROVED time/recovery policy in ADR-0008: PostgreSQL authority, final release check, conservative browser deadline, unsafe-clock closure and cleanup before serving. | T8/T12/T18 runtime verification before sensitive traffic/launch |
+| DM-OQ-04 | DEFERRED by ADR-0009: exact concurrent quota reservations/leases. Basic counters and hard resource/expiry/privacy controls remain. | Backlog T22 outside tasks.json; revisit before replicas or upon actual abuse/concurrency need |
+| DM-OQ-05 | RESOLVED policy: ADR-0007 trusted-address/HMAC/quiet-interval semantics synchronized; no public IP/header fields. Current-process time/recovery verification and actual proxy/key configuration remain implementation/deployment work. | T8/T12 runtime integration; T17/T18 configuration/security verification before launch |
 
 Browser/network test profile remains due before plan-tests and UI language/slider behavior before
 screens approval, as already recorded in SAD §11/spec §8. These do not justify fabricated API fields.
@@ -511,7 +517,7 @@ source story/AC coverage and exact field-origin table projection, exercises sche
 checks the maintenance branch table. Read `_audit/api-validation.md` for actual execution results.
 This is structural documentation verification, not an application/security/performance test.
 
-Suggested follow-up: resolve T2, then refresh the affected task/test-planning snapshots. T1 documentation completion does not unblock T3 while T2 is unresolved.
+Suggested follow-up: refresh test-planning/profile inputs, then scaffold T3/T4. T21 follows T3. Deferred backlog T22 must not block the initial implementation or launch.
 '''
 
 if __name__ == '__main__':
