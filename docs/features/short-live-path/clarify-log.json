@@ -1,0 +1,132 @@
+{
+  "date": "2026-10-22",
+  "depth": "easy",
+  "size": "M",
+  "route": "standard",
+  "findings": [
+    {
+      "id": "CL-01",
+      "class": "unstated-assumption",
+      "refs": [
+        "§1",
+        "AC-08",
+        "AC-11b",
+        "NFR-03",
+        "§8"
+      ],
+      "status": "resolved",
+      "before": "Lifetime defined; recovery of unexpired Secrets across crashes not specified.",
+      "after": "Loss of unexpired Secrets on crash/restart permitted; lifetime is a maximum, not durability; no recovery offered.",
+      "approval": "User selected confidentiality over recovery."
+    },
+    {
+      "id": "CL-02",
+      "class": "under-specified-AC",
+      "refs": [
+        "US-04",
+        "AC-08",
+        "§6.1"
+      ],
+      "status": "resolved",
+      "before": "Opening could reveal immediately or require a separate action.",
+      "after": "Neutral page on opening; explicit Show action required; optional code still required; no preview disclosure.",
+      "approval": "User selected explicit Show."
+    },
+    {
+      "id": "CL-03",
+      "class": "conflicting-requirement",
+      "refs": [
+        "AC-04",
+        "AC-10",
+        "NFR-03",
+        "§6.1"
+      ],
+      "status": "resolved",
+      "before": "New disclosure vs new authorization at expiry; offline/resume and in-flight behavior not fixed.",
+      "after": "Service-owned time; check just before release; no release at/after expiry; client suppresses late display, hides locally offline, rechecks before redisplay on resume. Concurrent pre-expiry reads allowed; previously acquired plaintext or ciphertext/keys cannot be revoked.",
+      "approval": "User approved boundary clarification and final in-flight/offline rule."
+    },
+    {
+      "id": "CL-04",
+      "class": "under-specified-AC",
+      "refs": [
+        "AC-02",
+        "AC-03"
+      ],
+      "status": "resolved",
+      "before": "64 KiB Secret text lacked byte accounting.",
+      "after": "Sum of UTF-8 address/login/password-or-key text before encryption, excluding code and packaging; preserve credential text exactly.",
+      "approval": "Easy assumptions ledger, item1 approved."
+    },
+    {
+      "id": "CL-05",
+      "class": "under-specified-AC",
+      "refs": [
+        "AC-02"
+      ],
+      "status": "resolved",
+      "before": "Omitted password/key did not distinguish empty from whitespace-only.",
+      "after": "Reject missing or whitespace-only password/key; preserve all whitespace in nonempty values without trimming/normalization.",
+      "approval": "Easy assumptions ledger, item2 approved."
+    },
+    {
+      "id": "CL-06",
+      "class": "under-specified-AC",
+      "refs": [
+        "AC-06",
+        "§6.1",
+        "§8"
+      ],
+      "status": "resolved",
+      "before": "Twelve characters and random generation lacked matching/count/generation rules.",
+      "after": "At least12 Unicode code points; exact case-and-space-sensitive match without trimming/normalization; generated code20 Latin letters/digits, secure randomness.",
+      "approval": "Easy assumptions ledger, item3 approved."
+    },
+    {
+      "id": "CL-07",
+      "class": "under-specified-AC",
+      "refs": [
+        "NFR-05"
+      ],
+      "status": "resolved",
+      "before": "Ten successful creations per minute could mean calendar or rolling window.",
+      "after": "At most10 successful creations per network address in any rolling60 seconds; reject without link, preserve current draft, explain waiting.",
+      "approval": "Easy assumptions ledger, item5 approved."
+    },
+    {
+      "id": "CL-08",
+      "class": "under-specified-AC",
+      "refs": [
+        "AC-07",
+        "§8"
+      ],
+      "status": "deferred",
+      "before": "Wrong-code/corruption behavior and temporary attempt controls not fully defined.",
+      "after": "No partial disclosure or permanent link consumption on wrong code; exact attempts/delays/error distinctions deferred.",
+      "owner": "Security Lead",
+      "due": "before design approval",
+      "approval": "Easy assumptions ledger, item6 approved for defer."
+    },
+    {
+      "id": "CL-09",
+      "class": "under-specified-AC",
+      "refs": [
+        "AC-01",
+        "§8"
+      ],
+      "status": "deferred",
+      "before": "Retry following lost creation response could create duplicates or leave success uncertain.",
+      "after": "No success claim without confirmed link or silent lifetime extension; duplicate/safe-retry/unreachable-Secret cleanup policy deferred under existing retention limits.",
+      "owner": "Tech Lead",
+      "due": "before tasks",
+      "approval": "Easy assumptions ledger, item7 approved for defer."
+    }
+  ],
+  "independent_findings": {
+    "expiration_boundary": "CL-03",
+    "offline_and_resume": "CL-03",
+    "creation_window": "CL-07"
+  },
+  "glossary_changed": false,
+  "subsequent_decisions": [{"stage": "ux-flows", "decision": "DEC-UX-US03", "supersedes": "CL-06 minimum twelve only", "current_rule": "Minimum six arbitrary Unicode code points; exact matching and twenty-character generation retained; see edits-log.json"}, {"stage": "ux-flows", "decision": "DEC-UX-US02", "current_rule": "Full minute-level range retained; exact hour-snapping interaction deferred to screens"}]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "decision_id": "DEC-UX-US02",
+    "stage": "ux-flows",
+    "action": "edit",
+    "before": "Lifetime selection accepts whole minutes from 1 through 1440; no interaction specified.",
+    "after": "Sender requests a slider with hour snapping while retaining every whole-minute value from 1 through 1440 and the one-hour default; exact keyboard/mobile interaction is deferred to Designer before screens approval.",
+    "user_reason": "щоб це був повзунок з автопідтягуванням до годин",
+    "final_confirmation": "Зберегти діапазон від 1 хвилини до 24 годин — повзунок прилипає до годин, але дозволяє вибрати й хвилинні значення. Уточнити таку взаємодію на етапі screens."
+  },
+  {
+    "decision_id": "DEC-UX-US03",
+    "stage": "ux-flows",
+    "action": "edit",
+    "before": "At least twelve Unicode code points; twenty-character random generation.",
+    "after": "At least six arbitrary Unicode code points; longer codes allowed, no blocking complexity requirements; twenty-character random generation retained. Weak-code warning is informational; predictable-code and offline-guessing risks explicitly accepted.",
+    "user_reason": "код від доавільни 6 символів не важливо якої складності",
+    "final_confirmation": "Мінімум 6 довільних символів — без вимог до цифр, регістру чи складності; довші коди дозволені. Випадкова генерація 20 символів залишається, попередження про слабкий код — інформаційне й не блокує створення."
+  }
+]
