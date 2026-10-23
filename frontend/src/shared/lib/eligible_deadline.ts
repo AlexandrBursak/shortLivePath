@@ -6,6 +6,7 @@ export class EligibleDeadline {
  private readonly received:ClockStamp;
  private readonly budget:number;
  private previous:ClockStamp;
+ private consumed=0;
  private closed=false;
  private reason:'active'|'unsafe'|'expired'='active';
  get disposition(){return this.reason;}
@@ -19,9 +20,13 @@ export class EligibleDeadline {
  remaining():number{
   if(this.closed)return 0;
   const now=stamp(this.clock),mono=now.mono-this.previous.mono,wall=now.wall-this.previous.wall;
-  if(mono<0 || wall<0 || Math.max(mono,wall)>1500 || Math.abs(mono-wall)>250){this.closed=true;this.reason='unsafe';return 0;}
+  // Compare against receipt as well as the previous observation:
+  // small per-tick discrepancies must not accumulate into an undetected sleep.
+  const elapsedMono=now.mono-this.received.mono,elapsedWall=now.wall-this.received.wall;
+  if(![now.mono,now.wall,mono,wall,elapsedMono,elapsedWall].every(Number.isFinite) || mono<0 || wall<0 || Math.max(mono,wall)>1500 || Math.abs(mono-wall)>250 || Math.abs(elapsedMono-elapsedWall)>250){this.closed=true;this.reason='unsafe';return 0;}
   this.previous=now;
-  const left=this.budget-Math.max(now.mono-this.received.mono,now.wall-this.received.wall);
+  this.consumed+=Math.max(mono,wall);
+  const left=this.budget-this.consumed;
   if(left<=0){this.closed=true;this.reason='expired';return 0;}return left;
  }
  eligible(){return this.remaining()>0;}

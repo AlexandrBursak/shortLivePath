@@ -1,6 +1,6 @@
 import type {ReactNode, Ref, InputHTMLAttributes, TextareaHTMLAttributes, ButtonHTMLAttributes} from 'react';
-export function ScreenFrame({title,children}:{title:string;children:ReactNode}) {
- return <main className="screenFrame"><h1>{title}</h1>{children}</main>;
+export function ScreenFrame({title,children,headingRef}:{title:string;children:ReactNode;headingRef?:Ref<HTMLHeadingElement>}) {
+ return <main className="screenFrame"><h1 ref={headingRef} tabIndex={headingRef?-1:undefined}>{title}</h1>{children}</main>;
 }
 type Field={id:string;label:string;help?:string;error?:string};
 function description({id,help,error}:Field){return [help && `${id}-help`,error && `${id}-error`].filter(Boolean).join(' ') || undefined;}

@@ -10,7 +10,12 @@ for (const path of ['/', '/s/synthetic-neutral-token']) {
   const icon=await page.request.get('/favicon.ico');expect(icon.status()).toBe(200);
   await expect(page.getByText(/does not change external passwords/)).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
-  if(path!=='/') {await expect(page.getByRole('button',{name:'Show Secret'})).toBeDisabled();}
+  if(path!=='/') {
+   await expect(page.getByRole('button',{name:'Show Secret'})).toHaveCount(0);
+   await expect(page.getByRole('heading',{name:'The Secret at this link is unavailable',exact:true})).toBeVisible();
+   await expect(page.getByRole('button',{name:/Copy/})).toHaveCount(0);
+   await expect(page.locator('textarea')).toHaveCount(0);
+  }
   expect(api).toEqual([]);expect(errors).toEqual([]);
  });
 }

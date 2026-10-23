@@ -29,7 +29,7 @@ runtime representation is implemented/tested in T8; exact quota reservation gene
 
 Origin: S7 “Receive scheduled five-second cleanup tick or startup or recovery trigger”.
 Delivery/ordering: local scheduling, not exactly-once or durable at-least-once delivery. Ticks
-may be delayed or missed during suspension. Duplicate or overlapping runs must be suppressed
+may be delayed or missed during outages, dependency downtime or suspension. Every later cleanup catches all expired backlog by original deadline, not only records expired since the previous tick. Duplicate or overlapping runs must be suppressed
 by current ownership; store deletion is independently idempotent. No HTTP Idempotency-Key
 is required by or exposed for this trigger.
 
@@ -42,16 +42,15 @@ state are handler context implemented/tested in T8 under ADR-0008/0009.
 
 Origin: S7 “Startup, reconnection, store identity change or runtime or clock discontinuity”.
 Close Secret traffic first, fence old eligibility and remove expired records/reconcile
-basic counter expiry before reopening. Current ADR-0009 retains ADR-0007's continuous quiet interval of at least sixty seconds after the last possible old mutation when continuity is lost or a key rotates. Repeated discontinuity restarts the interval; elapsed time without confirmed old-owner shutdown/current-run safety cannot reopen traffic. A successful sweep alone is insufficient. T8/T12 implement and verify these single-process time/recovery guards, not a guessed startup sleep; exact per-request quota reservations/fencing remain deferred backlog T22. Failed PostgreSQL health keeps serving closed without stopping
-Redis cleanup that can still execute. Metadata restoration never restores payloads/verifiers.
+basic counter expiry before reopening. Current ADR-0009 retains ADR-0007's continuous quiet interval of at least sixty seconds after the last possible old mutation when continuity is lost or a key rotates. Repeated discontinuity restarts the interval; elapsed time without confirmed old-owner shutdown/current-run safety cannot reopen traffic. A successful sweep alone is insufficient. T8/T12 implement and verify these single-process time/recovery guards, not a guessed startup sleep; exact per-request quota reservations/fencing remain deferred backlog T22. Failed PostgreSQL health keeps serving closed. Safe Redis cleanup may continue, but physical cleanup may be missed or delayed during dependency downtime, including PostgreSQL down at startup; Redis reachability alone does not impose an outage erasure deadline (ADR-0004 amendment, 2026-10-23). Metadata restoration never restores payloads/verifiers.
 
 ## Idempotency and retry
 
 Current-run identity/ownership suppresses duplicate execution. Completion from an old process,
 store or recovery generation must never reopen the current readiness gate. No API owners may overlap. Exact per-request quota leases and cross-process accounting are deferred backlog T22; no pending quota slots exist in v1.
 
-S7 requires at most N retries with bounded backoff inside the active-cleanup deadline. N,
-backoff and batch budgets are bounded implementation parameters verified in T8 against the unchanged deletion bound, not quota-lease prerequisites. Do not invent numbers,
+S7 requires at most N retries with bounded backoff against the normal-healthy-operation sixty-second target. N,
+backoff and batch budgets are bounded implementation parameters verified in T8 against that amended target; outage debt carries forward until all expired backlog is cleared before serving, not quota-lease prerequisites. Do not invent numbers,
 exponential backoff, durable delivery or a broker DLQ. Expiration is never extended by retry.
 
 Dead-letter means only a failed maintenance-run state plus an aggregate operational alert
@@ -64,8 +63,8 @@ uncertainty keep readiness closed; subsequent recovery still needs a confirmed c
 | Startup/reconnect/identity/discontinuity | Close and fence readiness before checking dependencies |
 | Regular tick cannot assure cleanup bound | Close readiness; continue executable cleanup |
 | Redis cannot execute cleanup or time unsafe | Stay closed; aggregate failure only |
-| PostgreSQL health fails but Redis cleanup works | Stay closed; continue executable expiration cleanup |
-| Due payload/verifier batches | Idempotent bounded deletion/reconciliation using expiry indexes |
+| PostgreSQL health fails, including at startup | Stay closed; safe cleanup may continue, but missed physical cleanup is accepted; catch all expired backlog before serving resumes |
+| Due payload/verifier batches | Idempotent bounded deletion/reconciliation of ALL scores due by current safe cutoff, with no last-tick/recent-interval lower cutoff; carry unresolved debt across runs |
 | Basic counter retention or expiry debt | Bounded due-state cleanup; never discard active safety history |
 | Batch/reconciliation retry budget exhausted | Internal dead-letter failure and aggregate alert; remain closed |
 | Retry budget not exhausted but debt unresolved | Bounded retry, remain closed, never extend expiry |
@@ -75,9 +74,12 @@ uncertainty keep readiness closed; subsequent recovery still needs a confirmed c
 
 ## Retention and verification boundary
 
-Delete active expired payload/verifier records within sixty seconds while Redis can execute
-cleanup. No physical RAM-erasure deadline is promised while a process/VM is suspended or hung.
-Clear expired records before traffic resumes. A five-second tick, TTL or fail-closed API alone
+Delete active expired payload/verifier records within sixty seconds during normal healthy operation.
+Outages, dependency downtime or suspension/hang may delay or miss physical cleanup. Each subsequent
+cleanup must catch all expired backlog by original deadline, not only a recent interval; bounded batches
+may span runs, but all expired backlog must clear before traffic resumes. The startup-PostgreSQL-down
+T8/T8b case is accepted delayed erasure, not a requirement to redesign the scheduler. Never disclose expired data.
+A month-old cohort is illustrative only, not a retention/lookback or selected-lifetime change; minimal lifecycle metadata remains indefinite. A five-second tick, TTL or fail-closed API alone
 does not prove the deletion bound. Never scan indefinitely retained PostgreSQL metadata for
 payload cleanup; use bounded Redis expiry indexes and prune orphan handles. Do not delete
 lifecycle metadata or persist Secret material as maintenance state.

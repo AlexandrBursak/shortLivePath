@@ -20,9 +20,18 @@ export function gate(value:unknown):NeutralGate{
  if(state==='expired' || state==='early_unavailable'){const v=object(value,['state','expires_at']);instant(v.expires_at);return {state,expires_at:text(v.expires_at)};}
  const v=object(value,['state','reading_code_required','expires_at']);if(state!=='available' || typeof v.reading_code_required!=='boolean')throw new ClientFault();instant(v.expires_at);return {state,reading_code_required:v.reading_code_required,expires_at:text(v.expires_at)};
 }
-export function failure(value:unknown):ClientFault{
+type Operation='create'|'status'|'disclose';
+const errorStatuses:Record<FailureCode,number>={invalid_request:422,request_too_large:413,unsupported_media_type:415,creation_limited:429,verification_limited:429,capacity_unavailable:503,service_unavailable:503,code_required:403,code_incorrect:403,link_unavailable:409,link_expired:410};
+const operationErrors:Record<Operation,readonly FailureCode[]>={
+ create:['invalid_request','request_too_large','unsupported_media_type','creation_limited','capacity_unavailable','service_unavailable'],
+ status:['capacity_unavailable','service_unavailable'],
+ disclose:['invalid_request','request_too_large','unsupported_media_type','verification_limited','capacity_unavailable','service_unavailable','code_required','code_incorrect','link_unavailable','link_expired'],
+};
+export function failure(value:unknown,status:number,operation:Operation):ClientFault{
  const root=object(value,['error']),e=object(root.error,['code','message','details']);
  const allowed:FailureCode[]=['invalid_request','request_too_large','unsupported_media_type','creation_limited','verification_limited','capacity_unavailable','service_unavailable','code_required','code_incorrect','link_unavailable','link_expired'];
  if(typeof e.code!=='string' || !e.code.startsWith('short_live_path.') || !allowed.includes(e.code.slice(16) as FailureCode) || typeof e.message!=='string' || !Array.isArray(e.details) || e.details.length)throw new ClientFault();
- return new ClientFault(e.code.slice(16) as FailureCode);
+ const code=e.code.slice(16) as FailureCode;
+ if(errorStatuses[code]!==status || !operationErrors[operation].includes(code))throw new ClientFault();
+ return new ClientFault(code);
 }

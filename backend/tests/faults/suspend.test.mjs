@@ -25,16 +25,25 @@ test('AC-10 AC-11: actual 90-second owned API suspension retains kernel exclusio
   }
   child.kill('SIGSTOP')
   // Test-owned recovered partial without native TTL: only active cleanup removes it.
-  await r.hSet(p+'secret:'+id+':payload',{credential:'synthetic partial'})
-  await r.zAdd(p+'payload:expiry',{score:Date.now()+1000,value:id});await r.hSet(p+'safety:continuity','payloads','1')
+  const ids=Array.from({length:1000},(_,i)=>i===0?id:randomUUID()),tx=r.multi()
+  for(const [i,handle] of ids.entries()){
+   tx.hSet(p+'secret:'+handle+':payload',{credential:'synthetic partial',code_verifier:'synthetic verifier'})
+   // Mixed-age/multi-batch debt; no recent-window lower bound may skip it.
+   tx.zAdd(p+'payload:expiry',{score:i%2?Date.now()+1000:Date.now()-31*86400000,value:handle})
+  }
+  await tx.exec();await r.hSet(p+'safety:continuity','payloads','1000')
   const other=spawn('sh',['docker/process-fence.sh',process.execPath,'-e','process.exit(0)'],{env,stdio:'ignore'})
   assert.equal((await once(other,'exit'))[0],75,'suspended old process must exclude replacements')
   await new Promise(resolve=>setTimeout(resolve,90000))
-  assert.equal(await r.exists(p+'secret:'+id+':payload'),1,'fixture must really remain while cleanup process is suspended')
+  assert.equal(await r.exists(ids.map(handle=>p+'secret:'+handle+':payload')),1000,'fixture must really remain while cleanup process is suspended')
   const resumed=performance.now();child.kill('SIGCONT')
   while(true){
    const status=(await fetch('http://127.0.0.1:3339/health/ready')).status
-   if(status===200){assert.equal(await r.exists(p+'secret:'+id+':payload'),0,'cleanup must precede readiness');break}
+   if(status===200){
+    assert.equal(await r.exists(ids.map(handle=>p+'secret:'+handle+':payload')),0,'all mixed-age payload/verifier cleanup must precede readiness')
+    assert.equal(await r.zCard(p+'payload:expiry'),0,'all original-deadline debt cleared')
+    break
+   }
    assert.ok(performance.now()-resumed<5000,'recovery must complete bounded cleanup')
    await new Promise(resolve=>setTimeout(resolve,25))
   }

@@ -2,7 +2,7 @@
 status: Draft
 owner: "Backend Lead"
 reviewers: ["Tech Lead", "Security Lead"]
-updated_at: "2026-10-22"
+updated_at: "2026-10-23"
 feature_size: M
 ---
 
@@ -98,7 +98,7 @@ Address labels retain ADR-0007's exact canonical-address/domain-separated HMAC c
 
 Bound histories to the recent timestamps needed for their threshold (25 successes / five failures); atomic counter updates must not lose completed events. The separate check and asynchronous work do NOT reserve a quota slot. Failures from already-admitted concurrent attempts may exceed the nominal threshold; do not promise the previous exact concurrent ceiling. Rejected requests do not add/move failure timestamps and success does not erase history. Refuse before allocating new counter identities at the 10000-record cap; never evict active safety state.
 
-Address/pair records expire no later than five minutes after last relevant activity, additionally bounded by link expiration for pair state. Prune rolling-window timestamps before basic admission. Payload expiry/registry structures are bounded and explicitly cleaned, not dropped with arbitrary whole-key TTL. A five-second cleanup loop uses due scores, not unbounded KEYS or permanent PostgreSQL history. Counter records never become durable address identities or backups.
+Address/pair records expire no later than five minutes after last relevant activity, additionally bounded by link expiration for pair state. Prune rolling-window timestamps before basic admission. Payload expiry/registry structures are bounded and explicitly cleaned, not dropped with arbitrary whole-key TTL. A five-second cleanup loop uses due scores, not unbounded KEYS or permanent PostgreSQL history. Each sweep selects all scores at or before the current safe cleanup cutoff, without a lower cutoff from a last-run timestamp or recent interval. Bounded batches carry unresolved due debt across runs and must drain all expired backlog before recovery readiness can reopen. ADR-0004 (approval amended 2026-10-23) keeps the <=60-second target during normal healthy operation and accepts missed/delayed physical cleanup during outages, dependency downtime (including startup PostgreSQL down) or suspension. A month-old backlog is illustrative only: original 1–1440-minute lifetimes/default 60 and indefinite minimal metadata retention are unchanged. Counter records never become durable address identities or backups.
 
 The global two-native-call/no-queue work permit remains process-local, retained until computation finishes after timeout/disconnect. It is distinct from deferred quota reservations. Payload publication must enforce the 1000-active/noeviction storage budget and original hard deadline without a long-lived reservation; T7 must prove safe publication/OOM/timeout cleanup. Unknown writes never imply absence or justify speculative confirmation.
 

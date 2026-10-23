@@ -2,7 +2,7 @@ export function observeLifecycle(page:EventTarget & {visibilityState:string},hos
  const hidden=()=>conceal();
  const returned=()=>{conceal();if(page.visibilityState==='visible')revalidate();};
  const visibility=()=>{if(page.visibilityState==='hidden')conceal();else returned();};
- const events:[EventTarget,string,EventListener][]=[[page,'visibilitychange',visibility],[page,'freeze',hidden],[host,'pagehide',hidden],[host,'pageshow',returned],[host,'focus',returned]];
+ const events:[EventTarget,string,EventListener][]=[[page,'visibilitychange',visibility],[page,'freeze',hidden],[host,'pagehide',hidden],[host,'pageshow',returned],[host,'focus',returned],[host,'offline',hidden],[host,'online',returned],[page,'resume',returned]];
  for(const [target,event,fn] of events)target.addEventListener(event,fn);
  return ()=>{for(const [target,event,fn] of events)target.removeEventListener(event,fn);};
 }

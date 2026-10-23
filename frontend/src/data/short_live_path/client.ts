@@ -17,10 +17,12 @@ export class SecretClient {
  private async request<T>(path:string,method:'GET'|'POST',body:unknown,parse:(value:unknown,origin:string)=>T,signal?:AbortSignal){
   const origin=this.origin(),sent=stamp(this.clock);
   try{
+   if(signal?.aborted)throw new ClientFault();
    const transport=this.transport;
    const response=await transport(origin+path,{method,cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',redirect:'error',signal,headers:{'content-type':'application/json'},...(method==='POST'?{body:JSON.stringify(body)}:{})});
    const raw=await boundedJson(response);
-   if(!response.ok)throw failure(raw);
+   if(signal?.aborted)throw new ClientFault();
+   if(!response.ok)throw failure(raw,response.status,method==='GET'?'status':path==='/api/v1/secrets'?'create':'disclose');
    if((method==='POST' && path==='/api/v1/secrets' && response.status!==201) || ((method==='GET' || path.endsWith('/disclosures')) && response.status!==200))throw new ClientFault();
    const root=object(raw,['data','meta']),meta=object(root.meta,['service_time']),service=instant(meta.service_time);
    return {value:parse(root.data,origin),service,sent};
