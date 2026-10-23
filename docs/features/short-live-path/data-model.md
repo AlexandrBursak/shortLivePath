@@ -37,6 +37,7 @@ erDiagram
         string code_verifier
         bigint created_at_ms
         bigint expires_at_ms
+        string integrity_digest
     }
     LINK_LIFECYCLES ||--o| EPHEMERAL_SECRET : "may have in Redis"
 ```
@@ -76,6 +77,7 @@ Aggregate ownership: LinkLifecycle's optional ephemeral payload. Proposed versio
 | `code_verifier` | Encoded salted password-hard hash, or absent field | Absence means no code required. Never persist the plaintext code; malformed present verifier fails closed, not as code-disabled. Algorithm/cost/budget follow Accepted ADR-0006 initial values; calibration is T21. |
 | `created_at_ms` | UTC epoch-millisecond integer string | Must match the final PostgreSQL timestamp. |
 | `expires_at_ms` | UTC epoch-millisecond integer string | Must match PostgreSQL and absolute Redis expiry. Never refresh on read or verification. |
+| `integrity_digest` | Lowercase SHA-256 hex, Redis only | Required corruption-detection digest over the ordered version/id/text/timestamp/optional-verifier tuple. Detects missing verifier or changed fields; not authentication against an operator who can rewrite live storage. Deleted with payload, never logged/persisted. |
 
 Sum of UTF-8 bytes of address, login and credential is at most 65536, excluding verifier and packaging. Validate again on stored-record read before constructing a response. Render/copy text verbatim; never HTML or server-side destination fetching. No requirement for browser content encryption exists. Neutral status inspects eligibility and verifier presence only; it must not serialize payload fields into its response.
 

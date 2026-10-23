@@ -154,8 +154,28 @@ review concern. The flow and the preset are one rule in two places; change them 
 
 ## What this project does differently
 
-<!-- FILL: the deltas only. If a rule above does not hold here, say so and why — an accepted
-     exception with a reason is fine; a silent one is drift. Leave empty if there are none. -->
+- **SAD §2 / ADR-0001:** this is a monorepo; backend paths above are relative
+  to `backend/`, with the browser application in `../frontend/`, not another repository.
+- **SAD §§2/4 / ADR-0003/0005/0008:** PostgreSQL owns lifecycle metadata and
+  authoritative time only. It must never store Secret content, code verifiers,
+  plaintext codes, raw tokens or full Share links. Future Lucid models remain metadata-only.
+- **SAD §§2/4 / ADR-0003/0004/0009:** Redis is the ephemeral primary for payloads,
+  verifiers and transient counters, not merely a cache. Disable RDB/AOF/backups,
+  use tmpfs/noeviction and bounded memory. Payload loss is allowed; reconstruction is not.
+  TTL alone does not prove the retention bound. Current-owner/time/cleanup recovery
+  must be verified before opening traffic (T8); bootstrap readiness stays closed.
+- **T3 scope:** test-only Compose uses tmpfs PostgreSQL too, synthetic credentials,
+  no published ports or external network, and no observability stack yet (T17).
+  Request/access logging and exception serialization are disabled. Any future telemetry
+  must be aggregate allowlisted events, excluding URLs, request bodies and sensitive state.
+  This scaffold does not claim actual-host persistence exclusions or security approval.
+- **Build/runtime isolation:** the `build` target contains the compiler, assembler and
+  lint/test tooling; the final `runtime` target starts compiled JavaScript with fresh
+  `--prod --no-optional` dependencies from an independent Node base, as a non-root user.
+  Never deploy the build target. Optional Adonis assembler peers and their vulnerable
+  glob chain are absent from runtime; the build advisory remains tracked, not suppressed.
+  Runtime gates inspect the installed filesystem, audit its full npm package inventory,
+  and exercise native Argon2 plus HTTP/store smoke before accepting dependency changes.
 
 ## Project specifics
 

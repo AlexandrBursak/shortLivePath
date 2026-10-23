@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+test('AC-01 AC-02 AC-03 AC-04 AC-05 AC-06: mounted creation keeps original paste/edit/undo strings and minute choices',async({page,context})=>{
+ await context.grantPermissions(['clipboard-read','clipboard-write']);
+ const submitted:Record<string,unknown>[]=[];
+ await page.route('**/api/v1/secrets',async route=>{
+  submitted.push(route.request().postDataJSON());
+  await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'short_live_path.service_unavailable',message:'Unavailable',details:[]}})});
+ });
+ await page.goto('/');
+ const credential=page.getByLabel('Password or key',{exact:true});await expect(credential).toBeVisible();
+ const paste=async(value:string)=>{await page.evaluate(s=>navigator.clipboard.writeText(s),value);await page.keyboard.press('Control+v');};
+ await credential.focus();await paste('a\r\na\nb');
+ await credential.evaluate((el:HTMLTextAreaElement)=>el.setSelectionRange(0,2));await page.keyboard.press('Backspace');
+ await page.getByLabel('Exact minutes',{exact:true}).fill('61');
+ await page.getByRole('button',{name:'Create Secret',exact:true}).click();
+ await expect.poll(()=>submitted.length).toBe(1);expect(submitted[0].credential).toBe('a\nb');expect(submitted[0].lifetime_minutes).toBe(61);
+ await expect(page.getByRole('alert').filter({hasText:'Creation is not confirmed.'})).toContainText('not confirmed');
+ await credential.focus();await page.keyboard.press('Control+z');
+ await page.getByRole('button',{name:'Create a new attempt'}).click();
+ await expect.poll(()=>submitted.length).toBe(2);await expect(page.getByRole('button',{name:'Create a new attempt'})).toBeEnabled();expect(submitted[1].credential).toBe('a\r\na\nb');
+ await credential.focus();await credential.evaluate((el:HTMLTextAreaElement)=>el.setSelectionRange(0,5));await paste('a\na\nb');
+ await credential.focus();await page.keyboard.press('Control+z');
+ await page.getByRole('button',{name:'Create a new attempt'}).click();
+ await expect.poll(()=>submitted.length).toBe(3);await expect(page.getByRole('button',{name:'Create a new attempt'})).toBeEnabled();expect(submitted[2].credential).toBe('a\r\na\nb');
+ await page.getByLabel('Require a separate Reading code').check();
+ const code=page.getByLabel('Reading code',{exact:true});await code.focus();await paste(' \r\n𝄞é x ');
+ await page.getByRole('button',{name:'Create a new attempt'}).click();
+ await expect.poll(()=>submitted.length).toBe(4);expect(submitted[3].reading_code).toBe(' \r\n𝄞é x ');
+ await page.getByRole('button',{name:'Generate 20-character code'}).click();expect(await code.inputValue()).toMatch(/^[A-Za-z0-9]{20}$/);
+ await page.getByLabel('Exact minutes',{exact:true}).fill('1.5');await page.getByRole('button',{name:'Create a new attempt'}).click();
+ expect(submitted.length).toBe(4);await expect(page.getByText('Enter a whole number from 1 to 1440.',{exact:true})).toBeVisible();
+});

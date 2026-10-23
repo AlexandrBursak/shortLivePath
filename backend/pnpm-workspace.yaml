@@ -1,0 +1,5 @@
+allowBuilds:
+  argon2: true
+  '@swc/core': true
+  unrs-resolver: true
+minimumReleaseAge: 0

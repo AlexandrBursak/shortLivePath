@@ -13,7 +13,7 @@ const SEE = 'see docs/architecture.md, "Layer dependency rules"';
 const only = (layer, allowed) => `${layer}/ may import from ${allowed} only — ${SEE}.`;
 const bottom = (layer, why) => `${layer}/ sits at the bottom: ${why} — ${SEE}.`;
 
-export default [
+const layers = [
   {
     files: ["src/**/*.{ts,tsx,js,jsx,mjs,cjs}"],
     plugins: { import: importPlugin },
@@ -60,3 +60,5 @@ export default [
     },
   },
 ];
+
+export default layers;
