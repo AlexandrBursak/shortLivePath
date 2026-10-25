@@ -732,6 +732,8 @@ Size M and route standard are read from .size and .route. The flow list and AC c
 
 ## 7. Deployment view
 
+**NPM-managed staging variant (ADR-0010).** Product Owner approved direct external Nginx Proxy Manager routing to API/frontend, without the inner application nginx. The self-contained Compose/nginx variant remains supported for local/standalone use. Both variants retain one public HTTPS origin, direct `/api/` routing, private health/metrics, one exact trusted immediate proxy with sanitized client addresses, no request-bearing logs/cache/disk buffering and no upstream retries. NPM-direct requires explicit private upstream bindings, Docker-aware NPM-only access restrictions and verification of active generated host-level logging/header rules before cutover. Ordinary app updates preserve PostgreSQL/Redis, keys and volumes. This is an accepted topology, not a claim of deployment or remote verification; see [ADR-0010](adr/0010-route-staging-directly-through-nginx-proxy-manager.md).
+
 
 
 **Topology.** Initial deployment uses one host and Docker Compose: HTTPS reverse proxy, Next.js Web UI, one AdonisJS Secret API replica, PostgreSQL Link Metadata and a dedicated ephemeral Redis instance. Only HTTPS is public; PostgreSQL and Redis are private services. Domain, host sizing and exact image versions are not supplied and must be pinned before deployment. This topology is approved, not deployed or benchmarked.
@@ -789,6 +791,7 @@ PostgreSQL uses a persistent volume and metadata-only backups. Redis has no pers
 | 0007 | [Canonicalize trusted addresses and fence quota resets](adr/0007-canonicalize-trusted-addresses-and-fence-quota-resets.md) | Superseded by 0009; address/quiet-window policy retained | §§7/8/11 |
 | 0008 | [Anchor lifetime and service time in PostgreSQL](adr/0008-anchor-lifetime-and-service-time-in-postgresql.md) | Accepted | §§4/6/8 |
 | 0009 | [Keep basic limits and defer exact concurrent quotas](adr/0009-keep-basic-limits-and-defer-exact-concurrent-quotas.md) | Accepted | §§4/6/8/11 |
+| 0010 | [Route staging directly through the existing Nginx Proxy Manager](adr/0010-route-staging-directly-through-nginx-proxy-manager.md) | Accepted; live cutover pending | §§5/7/8 |
 
 ADR files live under docs/features/short-live-path/adr/ and are indexed above. ADR-0002 is historical and intentionally superseded; its original browser-only requirement is not current.
 

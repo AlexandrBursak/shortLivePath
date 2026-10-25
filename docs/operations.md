@@ -1,5 +1,11 @@
 # Same-origin operations (T17)
 
+For staging with an existing external Nginx Proxy Manager, use the separate
+[NPM-direct runbook](npm-direct.md) and `compose.npm-direct.yml` to route directly
+to API/frontend without the inner proxy. The standalone topology below remains
+supported. NPM-direct is locally verified, not deployed: actual peer/ACL, generated
+logging and Access List checks are mandatory before live cutover (ADR-0010).
+
 ## Boundary and launch gates
 
 This is deployment wiring, **not production approval**. One non-root HTTPS nginx
@@ -135,5 +141,6 @@ The private `/health/metrics` endpoint is covered by the existing public health
 exclusion; do not publish API/collector/Prometheus/Grafana ports or enable automatic
 request/query/command logging/tracing. Metrics contain fixed aggregate enums/numbers
 only. Configuration and deterministic unit checks are not installed alerting,
-end-to-end throughput, deletion timing or monthly availability evidence. T19 remains
-BLOCKED; T20 acceptance/load is not released. Actual-host launch controls above remain.
+end-to-end throughput, deletion timing or monthly availability evidence. T19 is
+closed by the Product Owner with explicit T23/T24 deferrals; T20 runtime/load
+acceptance remains incomplete. Actual-host launch controls above remain.

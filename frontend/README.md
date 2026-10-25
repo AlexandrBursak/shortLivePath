@@ -19,3 +19,7 @@ docker compose -p slp-ui-check down --volumes
 `ExactTextArea` is an inert, monospace presentation/editing primitive, NOT a source-of-truth exact-copy adapter. Native controls normalize line endings. Keep original scalar strings outside DOM, implement paste/edit/source adapters and test CRLF before feature acceptance (T13/T16); never copy from `textarea.value` as proof of original bytes. No exact-copy behavior is registered by T4.
 
 Installed Chrome/Firefox/real Safari matrix is T19; Docker Chromium is not that matrix. Real iOS/Android, approved visual baselines and actual production launch controls remain outstanding.
+
+Root deployment: the standalone TLS path remains available; the opt-in
+[NPM-direct runbook](../docs/npm-direct.md) uses private HTTP Next upstream with
+public HTTPS same-origin API routing. It is not a live cutover approval.

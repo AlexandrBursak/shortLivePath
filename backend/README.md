@@ -75,7 +75,10 @@ HTTP headers remain no-store/no-referrer. Request logging/exception serializatio
 remain disabled. Runtime security, full retention fault matrix, same-origin/TLS
 wiring and production/mobile/performance approval are not implied by health200.
 
-The Compose file is test-only. Redis uses no persistence, tmpfs, 256 MiB and
+The Compose file is test-only. For the preserved standalone root deployment or
+opt-in external NPM → API/web path, see [`../docs/npm-direct.md`](../docs/npm-direct.md);
+its migration preserves stores/keys and requires actual-NPM logging/ACL gates.
+Redis uses no persistence, tmpfs, 256 MiB and
 noeviction; PostgreSQL is tmpfs for isolation despite its future metadata-only
 role. T17 owns the hardened deployment, proxy, TLS and host persistence exclusions.
 Observability is deliberately deferred: future events must be aggregate allowlisted

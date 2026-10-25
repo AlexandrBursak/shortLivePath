@@ -1,0 +1,13 @@
+# Opt-in overlay; base standalone TLS wiring is unchanged.
+# Validate private bind/ports using docker/npm-direct.py before publishing.
+services:
+  proxy:
+    profiles: [internal-proxy]
+  api:
+    environment:
+      SLP_TRUSTED_PROXY: ${SLP_NPM_PEER:?required observed immediate NPM socket peer}
+    ports:
+      - '${SLP_BIND_IP:?required private interface}:${SLP_NPM_API_PORT:-3333}:3333'
+  web:
+    ports:
+      - '${SLP_BIND_IP:?required private interface}:${SLP_NPM_WEB_PORT:-3000}:3000'
