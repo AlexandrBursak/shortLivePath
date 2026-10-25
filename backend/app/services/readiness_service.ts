@@ -87,7 +87,8 @@ export class ReadinessService {
  #purged=false
  #timer?:ReturnType<typeof setInterval>
  #running=false
- readonly metrics={cleanupExhaustions:0,recoveryFailures:0}
+ readonly metrics={cleanupExhaustions:0,recoveryFailures:0,lastSweep:0,recoverySeconds:0,healthySince:0}
+ #recoveryStart=performance.now()
  constructor(private redis:RedisEval,private owner:ProcessOwnershipService,namespace:string,key:Buffer,clock=new ServiceClock(),private host:HostClock=hostClock()){
   if(key.length!==32)throw new OperationFault('service_unavailable')
   this.prefix=namespacePrefix(namespace);this.keyDigest=createHash('sha256').update(key).digest('hex');this.clock=clock
@@ -106,6 +107,8 @@ export class ReadinessService {
   return [generation,String(saved.upperMs),this.host.bootId,String(stamp),String(saved.sourceMs)]
  }
  close():void{
+  if(this.#open)this.#recoveryStart=performance.now()
+  this.metrics.healthySince=0
   this.#generation=randomUUID();this.#open=false;this.#epoch++;this.#prepared=false;this.clock.invalidate()
   const next=this.#generation
   this.#fence=this.#fence.catch(()=>{}).then(async()=>{
@@ -129,12 +132,13 @@ export class ReadinessService {
    if(this.#open){
     const now=await this.fresh()
     await new CleanupService(this.redis,this.prefix.slice(4,-1),this.#generation).sweep(now)
+    this.metrics.lastSweep=performance.now()
    }else await this.recover()
   }catch{
    this.metrics.recoveryFailures++
    // This runs even after PostgreSQL loss. Only the current Redis generation
    // may clean; an obsolete scheduler cannot touch a replacement owner's data.
-   try{await this.#fence;await new CleanupService(this.redis,this.prefix.slice(4,-1),this.#confirmedGeneration??this.#generation).sweep(this.clock.deletionUpperBound())}
+   try{await this.#fence;await new CleanupService(this.redis,this.prefix.slice(4,-1),this.#confirmedGeneration??this.#generation).sweep(this.clock.deletionUpperBound());this.metrics.lastSweep=performance.now()}
    catch{this.metrics.cleanupExhaustions++}
    this.close()
   }finally{this.#running=false}
@@ -172,6 +176,9 @@ export class ReadinessService {
    if(this.#repair){await purgeUncertainState(this.redis,this.prefix,generation,'limiter');this.#repair=false}
    if(await evaluate(this.redis,openLua,this.keys(),this.checkpointArgs(generation))!==1)throw new Error()
    if(epoch!==this.#epoch || !this.owner.current)throw new Error()
+   this.metrics.lastSweep=performance.now()
+   this.metrics.recoverySeconds=(performance.now()-this.#recoveryStart)/1000
+   this.metrics.healthySince=now
    this.#open=true
   }catch{this.close();throw new OperationFault('service_unavailable')}
  }

@@ -1,4 +1,6 @@
 import {createRequire} from 'node:module'
+import dbPool from '@adonisjs/lucid/services/db'
+import {MetricsSampler} from '../app/services/metrics_sampler_service.js'
 import {createClient} from 'redis'
 import app from '@adonisjs/core/services/app'
 import config from '../config/maintenance.js'
@@ -8,6 +10,7 @@ import {ServiceClock} from '../app/services/service_clock.js'
 import type {RedisEval} from '../app/services/redis_support.js'
 interface DedicatedConnection extends OwnershipConnection {connect():Promise<void>;end():Promise<void>}
 const {Client}=createRequire(import.meta.url)('pg') as {Client:new(options:typeof config.postgres)=>DedicatedConnection}
+export let metricsSampler:MetricsSampler|undefined
 export let readiness:ReadinessService|undefined
 export let secretRedis:RedisEval|undefined
 // All web starts use the kernel process fence as well as this dedicated PG
@@ -16,6 +19,8 @@ if(app.getEnvironment()==='web' && config.key && config.namespace && config.redi
  const key=config.key,namespace=config.namespace,clock=new ServiceClock()
  const redis=createClient({url:config.redisUrl,disableOfflineQueue:true,socket:{connectTimeout:1000}})
  secretRedis=redis
+ const sampler=new MetricsSampler(redis,namespace,()=>dbPool.rawQuery("SELECT greatest(reltuples,0) AS rows,pg_total_relation_size(oid) AS bytes FROM pg_class WHERE oid='link_lifecycles'::regclass").timeout(1000));metricsSampler=sampler
+ const sampleTimer=setInterval(()=>{void sampler.sample(readiness)},10000);sampleTimer.unref()
  let db:DedicatedConnection|undefined,owner:ProcessOwnershipService|undefined,busy=false,stopped=false
  const reconnect=async()=>{
   if(busy || stopped || !redis.isReady || owner?.current)return
@@ -42,7 +47,7 @@ if(app.getEnvironment()==='web' && config.key && config.namespace && config.redi
  const timer=setInterval(()=>{void reconnect()},500);timer.unref()
  void redis.connect().catch(()=>{})
  app.terminating(async()=>{
-  stopped=true;clearInterval(timer);readiness?.stop()
+  stopped=true;clearInterval(timer);clearInterval(sampleTimer);readiness?.stop()
   await owner?.release().catch(()=>{})
   await db?.end().catch(()=>{})
   if(redis.isOpen)await redis.close().catch(()=>{})

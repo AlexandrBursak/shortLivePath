@@ -1,0 +1,2901 @@
+{
+  "scope": "354 class-level cells, not exhaustive test permutations; manual Safari offline shared unrecorded viewport, no duplicated width proof",
+  "counts": {
+    "PRIOR PASS": 122,
+    "PASS": 136,
+    "N/A": 48,
+    "OPEN": 38,
+    "BLOCKED": 6,
+    "PARTIAL": 2,
+    "MANUAL PASS (viewport unrecorded)": 2
+  },
+  "remaining_counts": {
+    "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL": 46
+  },
+  "cells": [
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "empty",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "validation",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "loading",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.transport",
+      "status": "PASS",
+      "evidence": "http-concurrency-chrome.json actual413/422; historical followup415 header interception unchanged"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.creation_limited",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.capacity_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.service_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.uncertain",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "loading",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "error",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Real1minute separate code/link removed; focused expiry, stale copy callback no feedback"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "loading.status",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "validation",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "loading.disclosure",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.code_incorrect",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.verification_limited",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.transport",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.invalid_request",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.temporary",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "concealed",
+      "status": "OPEN",
+      "evidence": "No full existing evidence at this exact browser/width/state",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "loading",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "error.copy",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "error.response",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "concealed",
+      "status": "OPEN",
+      "evidence": "No full existing evidence at this exact browser/width/state",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "empty",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "error.expired",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "error.early_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: loading",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: success",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "genuine background-return fresh status + Show",
+      "status": "BLOCKED",
+      "evidence": "automatic-chrome-lifecycle.json: explicit same-window IDs equal but document visible/no visibility events; persisted false/unobserved; no freeze event. Actual headed launch inspected; disabling BFCache flag already absent. No-store policies unchanged.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "pagehide/history fresh status + Show",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "native BFCache persisted true",
+      "status": "BLOCKED",
+      "evidence": "automatic-chrome-lifecycle.json: explicit same-window IDs equal but document visible/no visibility events; persisted false/unobserved; no freeze event. Actual headed launch inspected; disabling BFCache flag already absent. No-store policies unchanged.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "native freeze/resume event",
+      "status": "BLOCKED",
+      "evidence": "automatic-chrome-lifecycle.json: explicit same-window IDs equal but document visible/no visibility events; persisted false/unobserved; no freeze event. Actual headed launch inspected; disabling BFCache flag already absent. No-store policies unchanged.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "owned process suspend across expiry + first-frame",
+      "status": "OPEN",
+      "evidence": "Earlier narrower evidence retained, not complete exact combined case at this width",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL",
+      "remaining_note": "First compositor frame remains manual/unsupported; Firefox actual owned suspension already PASS in previous partial evidence. Do not repeat suspension alone as complete combined cell."
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "offline active concealment + expiry",
+      "status": "PASS",
+      "evidence": "CDP actual network offline navigator.onLine=false; concealment and expiry + actual410"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "actual disclosure held across expiry + observer",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "actual status held across expiry",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "clipboard completion across expiry",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "wall-clock jump confirmation/gate/reader",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-chrome.json :: wallclock both directions confirmation gate reader; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "concurrent protected/unprotected readers",
+      "status": "PASS",
+      "evidence": "http-concurrency-chrome.json protected independent processes plus historical chrome.json unprotected at same width, both PASS"
+    },
+    {
+      "browser": "chrome",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "confirmation expiry separate code/link",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "empty",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "validation",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "loading",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.transport",
+      "status": "PASS",
+      "evidence": "http-concurrency-chrome.json actual413/422; historical followup415 header interception unchanged"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.creation_limited",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.capacity_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.service_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.uncertain",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "loading",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "error",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Real1minute separate code/link removed; focused expiry, stale copy callback no feedback"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "loading.status",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "validation",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "loading.disclosure",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.code_incorrect",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.verification_limited",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.transport",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.invalid_request",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.temporary",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "concealed",
+      "status": "OPEN",
+      "evidence": "No full existing evidence at this exact browser/width/state",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "loading",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "error.copy",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "error.response",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "concealed",
+      "status": "OPEN",
+      "evidence": "No full existing evidence at this exact browser/width/state",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "empty",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "error.expired",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "error.early_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: loading",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: success",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "genuine background-return fresh status + Show",
+      "status": "BLOCKED",
+      "evidence": "automatic-chrome-lifecycle.json: explicit same-window IDs equal but document visible/no visibility events; persisted false/unobserved; no freeze event. Actual headed launch inspected; disabling BFCache flag already absent. No-store policies unchanged.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "pagehide/history fresh status + Show",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "native BFCache persisted true",
+      "status": "BLOCKED",
+      "evidence": "automatic-chrome-lifecycle.json: explicit same-window IDs equal but document visible/no visibility events; persisted false/unobserved; no freeze event. Actual headed launch inspected; disabling BFCache flag already absent. No-store policies unchanged.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "native freeze/resume event",
+      "status": "BLOCKED",
+      "evidence": "automatic-chrome-lifecycle.json: explicit same-window IDs equal but document visible/no visibility events; persisted false/unobserved; no freeze event. Actual headed launch inspected; disabling BFCache flag already absent. No-store policies unchanged.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "owned process suspend across expiry + first-frame",
+      "status": "OPEN",
+      "evidence": "Earlier narrower evidence retained, not complete exact combined case at this width",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL",
+      "remaining_note": "First compositor frame remains manual/unsupported; Firefox actual owned suspension already PASS in previous partial evidence. Do not repeat suspension alone as complete combined cell."
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "offline active concealment + expiry",
+      "status": "PASS",
+      "evidence": "CDP actual network offline navigator.onLine=false; concealment and expiry + actual410"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "actual disclosure held across expiry + observer",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "actual status held across expiry",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "clipboard completion across expiry",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "wall-clock jump confirmation/gate/reader",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-chrome.json :: wallclock both directions confirmation gate reader; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "concurrent protected/unprotected readers",
+      "status": "PASS",
+      "evidence": "http-concurrency-chrome.json protected independent processes plus historical chrome.json unprotected at same width, both PASS"
+    },
+    {
+      "browser": "chrome",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "confirmation expiry separate code/link",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "empty",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "validation",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "loading",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.transport",
+      "status": "PASS",
+      "evidence": "http-concurrency-firefox.json actual413/422; historical followup415 header interception unchanged"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.creation_limited",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.capacity_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.service_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.uncertain",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "loading",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "error",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Real1minute separate code/link removed; focused expiry, stale copy callback no feedback"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "loading.status",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "validation",
+      "status": "PASS",
+      "evidence": "tail-firefox-validation-contract.json :: AC-07 validation oversize empty and omitted-field native refusal; actual width 360; oversize 0POST; explicit empty 1POST actual403 code_incorrect; omitted-field outgoing {} native-fetch seam 1POST actual403 code_required; safe focused code/noSecret/no automatic retry. Historical failures archived BAD-RED, not product bug."
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "loading.disclosure",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.code_incorrect",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.verification_limited",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.transport",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.invalid_request",
+      "status": "PASS",
+      "evidence": "http-concurrency-firefox.json actual413/422 native-fetch outgoing-body seam, not form validation"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.temporary",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "concealed",
+      "status": "PASS",
+      "evidence": "Genuine hidden document observed; fresh status and explicit Show"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "loading",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "error.copy",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "error.response",
+      "status": "PASS",
+      "evidence": "http-concurrency-firefox.json held actual200 + explicitly controlled invalid login type, no transient plaintext, NOT backend invalid data"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "concealed",
+      "status": "PASS",
+      "evidence": "Genuine hidden document observed; fresh status and explicit Show"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "empty",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "error.expired",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "error.early_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: loading",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: success",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "genuine background-return fresh status + Show",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "pagehide/history fresh status + Show",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "native BFCache persisted true",
+      "status": "OPEN",
+      "evidence": "Earlier narrower evidence retained, not complete exact combined case at this width",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "native freeze/resume event",
+      "status": "OPEN",
+      "evidence": "Earlier narrower evidence retained, not complete exact combined case at this width",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "owned process suspend across expiry + first-frame",
+      "status": "PARTIAL",
+      "evidence": "Owned PID tree SIGSTOP/SIGCONT across expiry PASS; first-compositor-frame UNVERIFIED",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL",
+      "remaining_note": "First compositor frame remains manual/unsupported; Firefox actual owned suspension already PASS in previous partial evidence. Do not repeat suspension alone as complete combined cell."
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "offline active concealment + expiry",
+      "status": "OPEN",
+      "evidence": "Earlier narrower evidence retained, not complete exact combined case at this width",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "actual disclosure held across expiry + observer",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "actual status held across expiry",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "clipboard completion across expiry",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "wall-clock jump confirmation/gate/reader",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-firefox.json :: wallclock both directions confirmation gate reader; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "concurrent protected/unprotected readers",
+      "status": "PASS",
+      "evidence": "http-concurrency-firefox.json protected independent processes plus historical firefox.json unprotected at same width, both PASS"
+    },
+    {
+      "browser": "firefox",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "confirmation expiry separate code/link",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "empty",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "validation",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "loading",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.transport",
+      "status": "PASS",
+      "evidence": "http-concurrency-firefox.json actual413/422; historical followup415 header interception unchanged"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.creation_limited",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.capacity_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.service_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.uncertain",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "loading",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "error",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Real1minute separate code/link removed; focused expiry, stale copy callback no feedback"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "loading.status",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "validation",
+      "status": "PASS",
+      "evidence": "tail-firefox-validation-contract.json :: AC-07 validation oversize empty and omitted-field native refusal; actual width 1280; oversize 0POST; explicit empty 1POST actual403 code_incorrect; omitted-field outgoing {} native-fetch seam 1POST actual403 code_required; safe focused code/noSecret/no automatic retry. Historical failures archived BAD-RED, not product bug."
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "loading.disclosure",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.code_incorrect",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.verification_limited",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.transport",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.invalid_request",
+      "status": "PASS",
+      "evidence": "http-concurrency-firefox.json actual413/422 native-fetch outgoing-body seam, not form validation"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.temporary",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "concealed",
+      "status": "PASS",
+      "evidence": "Genuine hidden document observed; fresh status and explicit Show"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "loading",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "success",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "error.copy",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "error.response",
+      "status": "PASS",
+      "evidence": "http-concurrency-firefox.json held actual200 + explicitly controlled invalid login type, no transient plaintext, NOT backend invalid data"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "concealed",
+      "status": "PASS",
+      "evidence": "Genuine hidden document observed; fresh status and explicit Show"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Remaining true network-offline or owned suspension + late actual disclosure; pending controlled clipboard"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "default",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "empty",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "error.expired",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "error.early_unavailable",
+      "status": "PRIOR PASS",
+      "evidence": "main audit original + appended followup; controlled seams as documented; transport Firefox415 only, 413/body422 unresolved"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: loading",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: success",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "genuine background-return fresh status + Show",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "pagehide/history fresh status + Show",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "native BFCache persisted true",
+      "status": "OPEN",
+      "evidence": "Earlier narrower evidence retained, not complete exact combined case at this width",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "native freeze/resume event",
+      "status": "OPEN",
+      "evidence": "Earlier narrower evidence retained, not complete exact combined case at this width",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "owned process suspend across expiry + first-frame",
+      "status": "PARTIAL",
+      "evidence": "Owned PID tree SIGSTOP/SIGCONT across expiry PASS; first-compositor-frame UNVERIFIED",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL",
+      "remaining_note": "First compositor frame remains manual/unsupported; Firefox actual owned suspension already PASS in previous partial evidence. Do not repeat suspension alone as complete combined cell."
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "offline active concealment + expiry",
+      "status": "OPEN",
+      "evidence": "Earlier narrower evidence retained, not complete exact combined case at this width",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "actual disclosure held across expiry + observer",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "actual status held across expiry",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "clipboard completion across expiry",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "wall-clock jump confirmation/gate/reader",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-firefox.json :: wallclock both directions confirmation gate reader; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "concurrent protected/unprotected readers",
+      "status": "PASS",
+      "evidence": "http-concurrency-firefox.json protected independent processes plus historical firefox.json unprotected at same width, both PASS"
+    },
+    {
+      "browser": "firefox",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "confirmation expiry separate code/link",
+      "status": "PASS",
+      "evidence": "remaining real-API report; clipboard completion controlled where stated"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "empty",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "validation",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "loading",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.transport",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.creation_limited",
+      "status": "PASS",
+      "evidence": "automatic-safari-refusals.json: actual native Safari UI plus independent original HTTPS status controls, owned store fault fixtures; no intercepted Safari status claim. Exact width/visible/no-overflow assertions."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.capacity_unavailable",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-focused.json :: capacity actual API refusal restored fixture; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.service_unavailable",
+      "status": "PASS",
+      "evidence": "automatic-safari-refusals.json: actual native Safari UI plus independent original HTTPS status controls, owned store fault fixtures; no intercepted Safari status claim. Exact width/visible/no-overflow assertions."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "error.uncertain",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-01",
+      "case": "success",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "loading",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-focused.json :: confirmation controlled copy states; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "success",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-focused.json :: confirmation controlled copy states; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "error",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-focused.json :: confirmation controlled copy states; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-02",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "loading.status",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "validation",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "loading.disclosure",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.code_incorrect",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.verification_limited",
+      "status": "PASS",
+      "evidence": "automatic-safari-refusals.json: actual native Safari UI plus independent original HTTPS status controls, owned store fault fixtures; no intercepted Safari status claim. Exact width/visible/no-overflow assertions."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.transport",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.invalid_request",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "error.temporary",
+      "status": "PASS",
+      "evidence": "automatic-safari-refusals.json: actual native Safari UI plus independent original HTTPS status controls, owned store fault fixtures; no intercepted Safari status claim. Exact width/visible/no-overflow assertions."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "concealed",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: genuine owned second-tab hidden return; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "success",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "unavailable",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-03",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "loading",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: reader controlled pending rejected manual fallback; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "success",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "error.copy",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: reader controlled pending rejected manual fallback; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "error.response",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "concealed",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: genuine owned second-tab hidden return; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-04",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "empty",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "error.expired",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "error.early_unavailable",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: loading",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: success",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "SCR-05",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "genuine background-return fresh status + Show",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: genuine owned second-tab hidden return; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "pagehide/history fresh status + Show",
+      "status": "PASS",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "native BFCache persisted true",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "native freeze/resume event",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "owned process suspend across expiry + first-frame",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL",
+      "remaining_note": "First compositor frame remains manual/unsupported; Firefox actual owned suspension already PASS in previous partial evidence. Do not repeat suspension alone as complete combined cell."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "offline active concealment + expiry",
+      "status": "MANUAL PASS (viewport unrecorded)",
+      "evidence": "User-confirmed actual offline concealment, expiry and reconnect no redisclosure; final screenshot expired. Browser/version/viewport/timing unrecorded: shared manual evidence, NOT two independently width-verified runs."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "actual disclosure held across expiry + observer",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "actual status held across expiry",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "clipboard completion across expiry",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: clipboard late completion across actual expiry; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "wall-clock jump confirmation/gate/reader",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: wallclock both directions confirmation gate reader; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "concurrent protected/unprotected readers",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-concurrency-final.json :: protected unprotected overlapping independent readers; actual width 360. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 360,
+      "screen": "lifecycle",
+      "case": "confirmation expiry separate code/link",
+      "status": "PASS",
+      "evidence": "Safari matrix actual360/1280 protected confirmation original one-minute expiry; both separate handover pre blocks removed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "empty",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "validation",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "loading",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.transport",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.creation_limited",
+      "status": "PASS",
+      "evidence": "automatic-safari-refusals.json: actual native Safari UI plus independent original HTTPS status controls, owned store fault fixtures; no intercepted Safari status claim. Exact width/visible/no-overflow assertions."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.capacity_unavailable",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-focused.json :: capacity actual API refusal restored fixture; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.service_unavailable",
+      "status": "PASS",
+      "evidence": "automatic-safari-refusals.json: actual native Safari UI plus independent original HTTPS status controls, owned store fault fixtures; no intercepted Safari status claim. Exact width/visible/no-overflow assertions."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "error.uncertain",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-01",
+      "case": "success",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "loading",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-focused.json :: confirmation controlled copy states; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "success",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-focused.json :: confirmation controlled copy states; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "error",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-focused.json :: confirmation controlled copy states; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-02",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "loading.status",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "validation",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "loading.disclosure",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.code_incorrect",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.verification_limited",
+      "status": "PASS",
+      "evidence": "automatic-safari-refusals.json: actual native Safari UI plus independent original HTTPS status controls, owned store fault fixtures; no intercepted Safari status claim. Exact width/visible/no-overflow assertions."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.transport",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.invalid_request",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "error.temporary",
+      "status": "PASS",
+      "evidence": "automatic-safari-refusals.json: actual native Safari UI plus independent original HTTPS status controls, owned store fault fixtures; no intercepted Safari status claim. Exact width/visible/no-overflow assertions."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "concealed",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: genuine owned second-tab hidden return; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "success",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "unavailable",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-03",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "loading",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: reader controlled pending rejected manual fallback; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "success",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "error.copy",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: reader controlled pending rejected manual fallback; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "error.response",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "concealed",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: genuine owned second-tab hidden return; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "expired",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "N/A: empty",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-04",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "default",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "empty",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "error.expired",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "error.early_unavailable",
+      "status": "PASS",
+      "evidence": "Safari actual matrix 360 six PASS; archived 1280 five PASS plus focused initial-Show/reader-expiry PASS. Historical initial Show timeout retained, cause UNKNOWN, not fixed."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: loading",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: success",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "SCR-05",
+      "case": "N/A: validation",
+      "status": "N/A",
+      "evidence": "manifest explicit N/A"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "genuine background-return fresh status + Show",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: genuine owned second-tab hidden return; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "pagehide/history fresh status + Show",
+      "status": "PASS",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "native BFCache persisted true",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "native freeze/resume event",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "owned process suspend across expiry + first-frame",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL",
+      "remaining_note": "First compositor frame remains manual/unsupported; Firefox actual owned suspension already PASS in previous partial evidence. Do not repeat suspension alone as complete combined cell."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "offline active concealment + expiry",
+      "status": "MANUAL PASS (viewport unrecorded)",
+      "evidence": "User-confirmed actual offline concealment, expiry and reconnect no redisclosure; final screenshot expired. Browser/version/viewport/timing unrecorded: shared manual evidence, NOT two independently width-verified runs."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "actual disclosure held across expiry + observer",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "actual status held across expiry",
+      "status": "OPEN",
+      "evidence": "Requested360/1280 could not be established; actual1920x1148. History/Show proof only at actual1920, not target width.",
+      "remaining_class": "UNSUPPORTED_CURRENT_ADAPTER_OR_MANUAL"
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "clipboard completion across expiry",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: clipboard late completion across actual expiry; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "wall-clock jump confirmation/gate/reader",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari.json :: wallclock both directions confirmation gate reader; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "concurrent protected/unprotected readers",
+      "status": "PASS",
+      "evidence": "T19 automatic tail: tail-safari-concurrency-final.json :: protected unprotected overlapping independent readers; actual width 1280. See additive tail audit for controlled seam/response-proof limits."
+    },
+    {
+      "browser": "safari",
+      "width": 1280,
+      "screen": "lifecycle",
+      "case": "confirmation expiry separate code/link",
+      "status": "PASS",
+      "evidence": "Safari matrix actual360/1280 protected confirmation original one-minute expiry; both separate handover pre blocks removed."
+    }
+  ]
+}

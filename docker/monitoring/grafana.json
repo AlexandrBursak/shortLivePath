@@ -1,0 +1,72 @@
+{
+  "title": "SLP private aggregates",
+  "uid": "slp-private",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Successful latency p95",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (operation,le) (rate(slp_success_seconds_bucket[5m])))"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 2,
+      "title": "Outcomes (not eligible attainment)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (operation,outcome) (rate(slp_operations_total[5m]))"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 3,
+      "title": "Registry debt / observed presence",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "{__name__=~\"slp_registry_debt|slp_expired_present_sample\"}"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "id": 4,
+      "title": "Metadata growth",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "slp_metadata_bytes"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ]
+}

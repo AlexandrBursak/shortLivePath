@@ -125,3 +125,15 @@ replacement processes; read-only metadata backups must exclude sensitive data by
 schema and verified contents, not just by convention. Synthetic evidence/images
 can remain for independent verification; test keys/certificates must not become
 real deployment material.
+
+
+## T20 private aggregate instrumentation (implementation only)
+
+See [monitoring configuration](../docker/monitoring/README.md) and
+[isolated implementation/probe handles](../scripts/load/README.md).
+The private `/health/metrics` endpoint is covered by the existing public health
+exclusion; do not publish API/collector/Prometheus/Grafana ports or enable automatic
+request/query/command logging/tracing. Metrics contain fixed aggregate enums/numbers
+only. Configuration and deterministic unit checks are not installed alerting,
+end-to-end throughput, deletion timing or monthly availability evidence. T19 remains
+BLOCKED; T20 acceptance/load is not released. Actual-host launch controls above remain.

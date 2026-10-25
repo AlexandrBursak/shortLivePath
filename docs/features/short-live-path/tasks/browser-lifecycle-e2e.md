@@ -14,6 +14,10 @@ status: "blocked"
 
 # T19 — Verify all screens, exact copies and browser lifecycle safety
 
+Final execution disposition — done with explicit deferrals:
+
+The Product Owner explicitly closed T19 and moved the full remaining manual/adapter-limited checklist and additional verification dimensions to [T24](../backlog/deferred-browser-verification.md). T23 separately owns native clipboard Unicode fidelity. Completed execution evidence is in the [browser audit](../_audit/browser-verification.md) and [validation audit](../_audit/firefox-validation-contract.md). The historical ledger retains unresolved execution statuses; these are deferred, not passing results. The task's frontmatter/checklist below retain the original planning snapshot for the planning validator; [tracker.md](tracker.md) is the authoritative execution status. T19 no longer blocks T20 under this explicit scope decision. No T20, production-readiness or independent-security success is implied.
+
 ## Place in the sequence
 
 - Blocked by: T17 — Wire same-origin deployment and confidentiality controls. Blocks: T20 — Measure workload budgets and install aggregate synthetic checks. Wave: 14 (dependency depth, not elapsed days).
