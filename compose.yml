@@ -1,0 +1,130 @@
+# Deployment-shaped wiring. Required values have no ambient .env fallback in the wrapper.
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  ulimits:
+    core: {soft: 0, hard: 0}
+  logging: {driver: none}
+x-api-env: &api-env
+  NODE_ENV: production
+  HOST: 0.0.0.0
+  PORT: 3333
+  APP_KEY: ${SLP_APP_KEY:?required}
+  PGHOST: postgres
+  PGPORT: 5432
+  PGUSER: slp
+  PGPASSWORD: ${SLP_PG_PASSWORD:?required}
+  PGDATABASE: slp
+  REDIS_URL: redis://redis:6379
+  SLP_NAMESPACE: ${SLP_NAMESPACE:?required}
+  SLP_ADDRESS_KEY_FILE: /run/keys/address.key
+  SLP_PUBLIC_ORIGIN: ${SLP_PUBLIC_ORIGIN:?required}
+  SLP_TRUSTED_PROXY: ${SLP_PROXY_IP:?required}
+services:
+  proxy:
+    <<: *hardening
+    image: nginx:alpine@sha256:72ba65eb42c10344912a84ff42408db7d34f2feb642204570ab8fc5ffd29f1d3
+    entrypoint: [nginx, -g, 'daemon off;']
+    user: '1000:1000'
+    read_only: true
+    tmpfs: ['/tmp:uid=1000,gid=1000,mode=0700']
+    ports: ['127.0.0.1:${SLP_HTTPS_PORT:?required}:8443']
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${SLP_TLS_DIRECTORY:?required}:/run/tls:ro
+    networks:
+      edge:
+        ipv4_address: ${SLP_PROXY_IP:?required}
+    depends_on:
+      api: {condition: service_healthy}
+      web: {condition: service_healthy}
+  web:
+    <<: *hardening
+    image: ${SLP_WEB_IMAGE:-slp-web:local}
+    build: {context: ./frontend, dockerfile: docker/Dockerfile, target: production}
+    environment: {NODE_ENV: production, NEXT_TELEMETRY_DISABLED: '1', HOSTNAME: 0.0.0.0, PORT: 3000}
+    read_only: true
+    tmpfs: ['/tmp:uid=1000,gid=1000']
+    networks: [edge]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  migrate:
+    <<: *hardening
+    restart: 'no'
+    image: ${SLP_API_IMAGE:-slp-api:local}
+    build: {context: ./backend, dockerfile: docker/Dockerfile, target: runtime}
+    environment:
+      <<: *api-env
+      SLP_ADDRESS_KEY_FILE: ''
+    working_dir: /home/node/app/build
+    entrypoint: [node, ace.js]
+    command: [migration:run, --force]
+    networks: [store]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *hardening
+    image: ${SLP_API_IMAGE:-slp-api:local}
+    build: {context: ./backend, dockerfile: docker/Dockerfile, target: runtime}
+    environment: *api-env
+    read_only: true
+    tmpfs: ['/tmp:uid=1000,gid=1000']
+    volumes:
+      - api-owner:/run/slp-owner
+      - ${SLP_KEY_DIRECTORY:?required}:/run/keys:ro
+    networks: [edge, store]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3333/health/ready').then(r=>process.exit(r.ok?0:1))"]
+      start_period: 75s
+      interval: 2s
+      timeout: 3s
+      retries: 45
+    mem_limit: 768m
+    cpus: 2
+  postgres:
+    <<: *hardening
+    image: postgres:17-alpine@sha256:979c4379dd698aba0b890599a6104e082035f98ef31d9b9291ec22f2b13059ca
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    environment:
+      POSTGRES_USER: slp
+      POSTGRES_DB: slp
+      POSTGRES_PASSWORD: ${SLP_PG_PASSWORD:?required}
+    command: [postgres, -c, logging_collector=off, -c, log_statement=none, -c, log_min_messages=panic, -c, log_min_error_statement=panic]
+    volumes: [metadata:/var/lib/postgresql/data]
+    networks: [store]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U slp -d slp]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    <<: *hardening
+    image: redis:7-alpine@sha256:9de71018be8413f419688ac34e19dbac432d1c6d9593d2ded99a82eebefeb18f
+    user: '999:999'
+    command: [redis-server, /etc/redis.conf]
+    volumes: [./docker/redis.conf:/etc/redis.conf:ro]
+    tmpfs: ['/data:uid=999,gid=999,mode=0700']
+    networks: [store]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+networks:
+  edge:
+    ipam:
+      config: [{subnet: '${SLP_EDGE_SUBNET:?required}'}]
+  store:
+    internal: true
+    ipam:
+      config: [{subnet: '${SLP_STORE_SUBNET:?required}'}]
+volumes:
+  metadata:
+  api-owner:

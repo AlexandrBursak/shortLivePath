@@ -1,0 +1,6 @@
+# Reuse the previously installed locked toolchain; compile current source.
+# This is not a new install or production image/dependency audit claim.
+FROM slp-t3-test-85230-api AS build
+COPY --chown=node:node . .
+RUN pnpm build
+CMD ["sh"]

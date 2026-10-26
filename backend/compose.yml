@@ -1,0 +1,98 @@
+# Disposable synthetic test environment only; not a production deployment.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: build
+    environment: &test_environment
+      NODE_ENV: test
+      HOST: 0.0.0.0
+      PORT: 3333
+      APP_KEY: synthetic-test-only-not-for-deployment
+      PGHOST: postgres
+      PGUSER: synthetic
+      PGPASSWORD: synthetic-local-only
+      PGDATABASE: synthetic
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging: &logging
+      driver: local
+      options: { max-size: 1m, max-file: "2" }
+    mem_limit: 768m
+    cpus: 2
+  runtime:
+    profiles: [runtime]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    environment:
+      <<: *test_environment
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging: *logging
+    mem_limit: 768m
+    cpus: 2
+    volumes:
+      - api-owner:/run/slp-owner
+    healthcheck:
+      test: [CMD, node, --input-type=module, -e, "const r = await fetch('http://127.0.0.1:3333/health/live'); process.exit(r.status === 200 ? 0 : 1)"]
+      interval: 1s
+      timeout: 3s
+      retries: 20
+  benchmark:
+    profiles: [benchmark]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    command: [node, /benchmark/reading-code.mjs, --run]
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ../scripts/benchmark:/benchmark:ro
+    network_mode: none
+    read_only: true
+    tmpfs: [/run/slp-owner:uid=1000,gid=1000,mode=0700]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ulimits:
+      core: 0
+    logging:
+      driver: none
+    mem_limit: 768m
+    cpus: 2
+  postgres:
+    image: postgres:17.9-bookworm
+    environment:
+      POSTGRES_USER: synthetic
+      POSTGRES_PASSWORD: synthetic-local-only
+      POSTGRES_DB: synthetic
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U synthetic -d synthetic]
+      interval: 1s
+      timeout: 2s
+      retries: 30
+    logging: *logging
+  redis:
+    image: redis:8.2.6-bookworm
+    command: [redis-server, --save, "", --appendonly, "no", --maxmemory, 256mb, --maxmemory-policy, noeviction]
+    tmpfs: [/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 1s
+      timeout: 2s
+      retries: 30
+    logging: *logging
+volumes:
+  api-owner:

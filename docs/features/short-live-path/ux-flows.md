@@ -1,7 +1,7 @@
 ---
 status: approved
 feature_size: M
-updated_at: "2026-10-22"
+updated_at: "2026-10-23"
 ---
 
 # UX flows — short-live-path
@@ -210,7 +210,7 @@ flowchart TD
     U5J --> U5K
 ```
 
-The Sender sees the confirmed expiration and recovery limits at sharing time. A Recipient cannot obtain a new service release at or after that time, even with the correct code or a request that started earlier. A normal running page hides content locally at expiry without needing network access. A suspended page checks the boundary before redisplay on return; late arrivals are never shown. SCR-05 explains unavailability without fragments, recovery or a promise to revoke an external password/key or erase already acquired Secret-content copies. A Recipient can contact the Sender externally; the Sender may create a new Secret rather than recover the old one. Storage erasure within sixty seconds while Redis can execute cleanup, and expired-record cleanup before serving after suspension/hang, are service obligations, not an observable screen transition; it remains separately testable under AC-11/NFR-03 and the storage design question. The diagram does not fabricate a UI acknowledgment proving physical deletion.
+The Sender sees the confirmed expiration and recovery limits at sharing time. A Recipient cannot obtain a new service release at or after that time, even with the correct code or a request that started earlier. A normal running page hides content locally at expiry without needing network access. A suspended page checks the boundary before redisplay on return; late arrivals are never shown. SCR-05 explains unavailability without fragments, recovery or a promise to revoke an external password/key or erase already acquired Secret-content copies. A Recipient can contact the Sender externally; the Sender may create a new Secret rather than recover the old one. Storage erasure within sixty seconds during normal healthy operation; outage/dependency-down/suspension delay is accepted, with all expired backlog caught before traffic resumes, and expired-record cleanup before serving after suspension/hang, are service obligations, not an observable screen transition; it remains separately testable under AC-11/NFR-03 and the storage design question. The diagram does not fabricate a UI acknowledgment proving physical deletion.
 
 ## AC coverage
 
@@ -226,7 +226,7 @@ The Sender sees the confirmed expiration and recovery limits at sharing time. A 
 | AC-08 | Flow US-04 U4A/U4B/U4H/U4L return branch; Flow US-03 no-code branch | Initial and repeated explicit reading, no account or one-time consumption; concurrent reads allowed |
 | AC-09 | Flow US-04 U4C unavailable to U4D; opening U4A remains neutral | Safe unavailability without content; opening alone does not consume a valid link |
 | AC-10 | Flow US-04 U4F no to U4G; Flow US-05 U5C no, U5G and U5H | Service pre-release boundary, late responses, local offline hiding and resume-before-display check; no remote revocation promise |
-| AC-11 | Flow US-05 U5D/U5I covers only user-facing expiry explanation; N/A for storage erasure/logs/backups: service-only obligation without a UI action | Scoped active-Secret-data erasure (sixty seconds while cleanup can execute, cleanup before serving after suspension/hang) and exclusions from logs/backups require service, recovery and security tests; no screen proves storage deletion |
+| AC-11 | Flow US-05 U5D/U5I covers only user-facing expiry explanation; N/A for storage erasure/logs/backups: service-only obligation without a UI action | Scoped active-Secret-data erasure (sixty seconds during normal healthy operation, accepted outage/dependency-down/suspension delay, all expired backlog cleared before serving after recovery) and exclusions from logs/backups require service, recovery and security tests; no screen proves storage deletion |
 | AC-11b | Flow US-04 U4C unavailable to U4D, then Flow US-05 U5I/U5J/U5K | Crash/restart may lose unexpired Secrets; no recovery; request replacement from Sender |
 | AC-12 | Flow US-05 U5I | Explain no external password/key revocation or erasure of saved Recipient copies |
 
@@ -240,7 +240,7 @@ The remaining open questions in spec section 8 remain owned and scheduled; opera
 
 Product Owner confirmed server-readable processing over HTTPS and retained the optional Reading code. No recipient identification or per-person binding is introduced: the same link and optional code may be shared with multiple people. Browser encryption, fragment-carried keys and protection from live operator inspection are not required. Log/backup exclusions, exact text, explicit Show, repeated/concurrent reading, expiration and erasure remain mandatory. Diagrams are unchanged: this revises internal processing, not the confirmed navigation. Earlier offline-guessing discussion below records historical UX confirmation, not a current browser-encryption requirement.
 
-Product Owner subsequently approved the scoped deletion guarantee: sixty seconds while Redis can execute cleanup, no physical RAM-erasure deadline during process/VM suspension or hang, and expired-record cleanup before serving resumes. No persistence/backups/recovery; no promise of forensic RAM zeroization. The UI expiration behavior is unchanged.
+Product Owner subsequently approved the scoped deletion guarantee: sixty seconds during normal healthy operation; outage/dependency-down/suspension delay is accepted, with all expired backlog caught before traffic resumes, no physical RAM-erasure deadline during process/VM suspension or hang, and expired-record cleanup before serving resumes. No persistence/backups/recovery; no promise of forensic RAM zeroization. The UI expiration behavior is unchanged.
 
 Product Owner also approved a visible remaining-lifetime countdown and PostgreSQL retention of minimal lifecycle metadata indefinitely for now. Known expired URLs resolve to SCR-05 with an explicit expired message, not a missing-page/404 experience. Unknown URLs are safely unavailable; a known unexpired link whose Redis content was lost shows early unavailability. PostgreSQL stores no Secret text, code/verifier or full link. This amendment changes state detail and timing presentation, not screen IDs or navigation; detailed countdown presentation belongs to screens.
 

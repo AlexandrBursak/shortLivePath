@@ -45,12 +45,12 @@ This task contributes: Implement bounded cleanup and generation-fenced readiness
 > — `sad.md §5, module boundaries, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Retention and outage boundaries.** The <=60-second active-record deletion bound remains mandatory while Redis can execute cleanup. TTL, a five-second tick or a fail-closed API alone is not proof; T8/T18 must test cleanup under faults and capacity. No physical RAM-erasure deadline applies during suspension/hang. Startup/recovery closes traffic, establishes current single-process ownership and safe PostgreSQL time, clears expired records and only then reopens. Continue possible Redis cleanup during PostgreSQL outage. Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
+> **Retention and outage boundaries.** The <=60-second active-record deletion target applies during normal healthy operation, not merely whenever Redis alone is reachable. Physical cleanup may be delayed or missed during service/runtime outages, dependency downtime (including PostgreSQL unavailable at startup), or suspension/hang. Each subsequent cleanup selects all expired backlog by original deadline, with no recent-interval lower cutoff; bounded batches continue until all due debt is cleared before Secret traffic resumes. TTL, a scheduler tick or closed readiness alone is not proof. Startup/recovery establishes current ownership, safe PostgreSQL time and dependencies before reopening. Continuing safe cleanup during PostgreSQL outage is useful but is not an outage erasure guarantee or a reason to redesign the scheduler (ADR-0004 amendment, 2026-10-23). Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
 >
 > — `sad.md §6, S7, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Chosen:** Option 1. Revise AC-11 and NFR-03: delete expired records from active storage within sixty seconds while Redis is running and able to execute cleanup.
+> **Chosen:** Option 1 (approval amended 2026-10-23 in ADR-0004). Revise AC-11 and NFR-03: delete expired records from active storage within sixty seconds during normal healthy operation; outages, dependency downtime and suspension may delay physical cleanup. Subsequent cleanup catches all expired backlog by original deadline, not only a recent interval, before Secret traffic resumes. Never release expired data.
 >
 > — `adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md §Decision outcome, ADR-0004, abridged` · full text: [adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md](../adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md)
 
@@ -98,7 +98,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Secret has expired
 > **When** the service applies its retention policy
-> **Then** active stored Secret data is removed within sixty seconds of expiration while Redis is running and able to execute cleanup. During process or virtual-machine suspension/hang, physical removal from memory within that interval is not guaranteed; after recovery, expired records are cleared before serving Secret traffic resumes. The service never releases expired data, independently of cleanup. Secret records have no disk persistence, backups or recovery; Secret content, Reading codes, and full Share links are absent from logs and backups. Removal means deletion from active service storage, not guaranteed forensic zeroization of RAM.
+> **Then** active stored Secret data is removed within sixty seconds of expiration during normal healthy operation. Physical cleanup may be delayed or missed during service/runtime outages, dependency downtime (including PostgreSQL unavailable at startup), or process/virtual-machine suspension/hang. Each subsequent cleanup catches all expired backlog using the original expiration deadlines, not only records expired since the previous tick or within a recent interval; bounded batches may continue across runs, but all expired backlog must be cleared before Secret traffic resumes after recovery. The service never releases expired data, independently of cleanup. Secret records have no disk persistence, backups or recovery; Secret content, Reading codes, and full Share links are absent from logs and backups. Removal means deletion from active service storage, not guaranteed forensic zeroization of RAM.
 >
 > — `spec.md §5, AC-11, verbatim` · full text: [spec.md](../spec.md)
 
@@ -116,11 +116,11 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 - [ ] Implement T2-reviewed service clock, five-second internal scheduler, indexed bounded sweep/retry budgets and current-run ownership; no separate worker, broker or durable maintenance table. Work area: `backend/app/services/cleanup_service.ts` (and matching files_hint targets).
 
-- [ ] Delete expired payloads/verifiers and stale limiter/index handles within 60s while Redis executes; do not scan permanent metadata or use unbounded KEYS. Work area: `backend/app/services/readiness_service.ts` (and matching files_hint targets).
+- [ ] Delete expired payloads/verifiers and stale limiter/index handles within 60s during normal healthy operation; catch all expired backlog on subsequent sweeps, including older missed intervals; do not scan permanent metadata or use unbounded KEYS. Work area: `backend/app/services/readiness_service.ts` (and matching files_hint targets).
 
 - [ ] Close and fence serving on startup/reconnect/identity/clock changes; reopen only after current-run dependency/PostgreSQL-time checks, expired cleanup and retained address-key continuity checks; exact quota leases are deferred. Work area: `backend/app/services/service_clock.ts` (and matching files_hint targets).
 
-- [ ] Continue Redis cleanup when PostgreSQL health fails. Old completion cannot reopen current readiness; report aggregate internal failure on exhausted retries. Work area: `backend/start/maintenance.ts` (and matching files_hint targets).
+- [ ] Safe Redis cleanup may continue when PostgreSQL health fails, but missed physical cleanup (including startup PostgreSQL down) is accepted; catch all expired backlog before serving resumes, without redesigning the scheduler solely for this case. Old completion cannot reopen current readiness; report aggregate internal failure on exhausted retries. Work area: `backend/start/maintenance.ts` (and matching files_hint targets).
 
 - [ ] Write the named tests first (RED), then implement and pass GREEN; for decision tasks use executable evidence/review vectors rather than claiming runtime success from prose.
 
@@ -129,13 +129,13 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 | Case | Behaviour |
 |---|---|
 | Suspension exceeds 60s | No RAM-erasure claim during suspension; clean expired records before resuming traffic. |
-| Readiness closed but Redis runs | Continue cleanup; closed traffic alone is not deletion proof. |
+| Readiness closed but Redis runs | Redis availability alone creates no outage erasure deadline. Safe cleanup may continue; missed cleanup must catch all expired backlog before serving resumes. |
 
 Edge-case sources: [spec.md](../spec.md) §5, AC-10, AC-11, AC-11b, abridged; [sad.md](../sad.md) §6, S7, abridged. Decisions T1/T2 also follow [data-model.md](../data-model.md) §Open technical decisions, DM-OQ-01…05, abridged.
 
 ## Definition of Done
 
-- [ ] Real-Redis/PostgreSQL fault tests measure <=60s active deletion and prove cleanup-before-serving, safe PostgreSQL time/current-run guards, continued cleanup during PostgreSQL outage and no early-payload recovery; no deferred quota-lease protocol is required.
+- [ ] Real-Redis/PostgreSQL tests measure <=60s active deletion during normal healthy operation; outage/dependency-down/suspension delay is accepted. Recovery must catch all expired backlog (including debt older than the last tick/recent interval) before serving, preserve safe PostgreSQL time/current-run guards, deny expired release and never reconstruct payloads; no scheduler redesign for startup PostgreSQL downtime or deferred quota-lease protocol is required.
 
 - [ ] All inlined hard rules still hold; tests cite their AC IDs.
 

@@ -1,0 +1,4 @@
+# Explicit comparison profile; does not change API/runtime deployment resources.
+services:
+  benchmark:
+    cpus: 4

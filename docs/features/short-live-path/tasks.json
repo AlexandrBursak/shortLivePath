@@ -187,7 +187,7 @@
         "backend/tests/integration/cleanup_recovery.spec.ts"
       ],
       "file": "docs/features/short-live-path/tasks/cleanup-recovery.md",
-      "dod": "Real-Redis/PostgreSQL fault tests measure <=60s active deletion and prove cleanup-before-serving, safe PostgreSQL time/current-run guards, continued cleanup during PostgreSQL outage and no early-payload recovery; no deferred quota-lease protocol is required."
+      "dod": "Real-Redis/PostgreSQL tests measure <=60s active deletion during normal healthy operation; outage/dependency-down/suspension delay is accepted. Recovery must catch all expired backlog (including debt older than the last tick/recent interval) before serving, preserve safe PostgreSQL time/current-run guards, deny expired release and never reconstruct payloads; no scheduler redesign for startup PostgreSQL downtime or deferred quota-lease protocol is required."
     },
     {
       "id": "T9",
@@ -444,7 +444,7 @@
         "docs/features/short-live-path/_audit/runtime-security.md"
       ],
       "file": "docs/features/short-live-path/tasks/confidentiality-recovery-audit.md",
-      "dod": "Canary audit has zero payload/code/full-link log/backup hits; fault suites prove no late releases, <=60s deletion while cleanup executes and cleanup-before-serving, or explicitly block launch with evidence."
+      "dod": "Canary audit has zero payload/code/full-link log/backup hits; fault suites prove no late releases, <=60s deletion during normal healthy operation and all-expired-backlog cleanup before serving after accepted outage/dependency-down/suspension delay, or explicitly block launch on remaining unmet obligations with evidence."
     },
     {
       "id": "T19",

@@ -32,8 +32,9 @@ def main():
         started = True
         deadline = time.monotonic() + 45
         while True:
+            # The image's temporary init server accepts Unix sockets, not TCP.
             ready = subprocess.run(
-                ["docker", "exec", name, "pg_isready", "-U", "postgres"],
+                ["docker", "exec", name, "pg_isready", "-h", "127.0.0.1", "-U", "postgres"],
                 capture_output=True, text=True,
             )
             if ready.returncode == 0:
@@ -44,7 +45,7 @@ def main():
 
         def sql(text):
             return run("docker", "exec", "--interactive", name, "psql",
-                       "-X", "-U", "postgres", "-d", "postgres",
+                       "-X", "-h", "127.0.0.1", "-U", "postgres", "-d", "postgres",
                        "-v", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", source=text)
 
         up = (FEATURE / "migrations/01_create_link_lifecycles.up.sql").read_text()

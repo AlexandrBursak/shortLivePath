@@ -102,8 +102,7 @@ The table and the preset are one rule in two places — change them together.
 
 ## What this project does differently
 
-<!-- FILL: the deltas only. If a rule above does not hold here, say so and why — an accepted
-     exception with a reason is fine; a silent one is drift. Leave empty if there are none. -->
+This workspace intentionally co-locates `frontend/` and `backend/`; they remain separate services and source roots. The authoritative contract is `../../docs/features/short-live-path/contracts/openapi.yaml`. Browser API traffic will be same-origin through the deployment proxy (T17), not a public cross-origin backend variable. Secret pages deliberately do not SSR-fetch payload/status or emit capability canonical/OpenGraph URLs. Tokens live in `src/shared/styles/tokens.css` per the approved code-only canon, imported by the root layout. No external content/CMS, accounts or analytics are introduced.
 
 ## Project specifics
 

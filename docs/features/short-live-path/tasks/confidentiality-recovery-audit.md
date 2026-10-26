@@ -55,7 +55,7 @@ This task contributes: Verify canary confidentiality and fault-recovery boundari
 > — `sad.md §6, S4, abridged` · full text: [sad.md](../sad.md)
 
 
-> **Retention and outage boundaries.** The <=60-second active-record deletion bound remains mandatory while Redis can execute cleanup. TTL, a five-second tick or a fail-closed API alone is not proof; T8/T18 must test cleanup under faults and capacity. No physical RAM-erasure deadline applies during suspension/hang. Startup/recovery closes traffic, establishes current single-process ownership and safe PostgreSQL time, clears expired records and only then reopens. Continue possible Redis cleanup during PostgreSQL outage. Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
+> **Retention and outage boundaries.** The <=60-second active-record deletion target applies during normal healthy operation, not merely whenever Redis alone is reachable. Physical cleanup may be delayed or missed during service/runtime outages, dependency downtime (including PostgreSQL unavailable at startup), or suspension/hang. Each subsequent cleanup selects all expired backlog by original deadline, with no recent-interval lower cutoff; bounded batches continue until all due debt is cleared before Secret traffic resumes. TTL, a scheduler tick or closed readiness alone is not proof. Startup/recovery establishes current ownership, safe PostgreSQL time and dependencies before reopening. Continuing safe cleanup during PostgreSQL outage is useful but is not an outage erasure guarantee or a reason to redesign the scheduler (ADR-0004 amendment, 2026-10-23). Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
 >
 > — `sad.md §6, S7, abridged` · full text: [sad.md](../sad.md)
 
@@ -65,7 +65,7 @@ This task contributes: Verify canary confidentiality and fault-recovery boundari
 > — `adr/0003-use-server-readable-ephemeral-secrets-with-optional-reading-code.md §Decision outcome, ADR-0003, abridged` · full text: [adr/0003-use-server-readable-ephemeral-secrets-with-optional-reading-code.md](../adr/0003-use-server-readable-ephemeral-secrets-with-optional-reading-code.md)
 
 
-> **Chosen:** Option 1. Revise AC-11 and NFR-03: delete expired records from active storage within sixty seconds while Redis is running and able to execute cleanup.
+> **Chosen:** Option 1 (approval amended 2026-10-23 in ADR-0004). Revise AC-11 and NFR-03: delete expired records from active storage within sixty seconds during normal healthy operation; outages, dependency downtime and suspension may delay physical cleanup. Subsequent cleanup catches all expired backlog by original deadline, not only a recent interval, before Secret traffic resumes. Never release expired data.
 >
 > — `adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md §Decision outcome, ADR-0004, abridged` · full text: [adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md](../adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md)
 
@@ -143,7 +143,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 > **Given** a Secret has expired
 > **When** the service applies its retention policy
-> **Then** active stored Secret data is removed within sixty seconds of expiration while Redis is running and able to execute cleanup. During process or virtual-machine suspension/hang, physical removal from memory within that interval is not guaranteed; after recovery, expired records are cleared before serving Secret traffic resumes. The service never releases expired data, independently of cleanup. Secret records have no disk persistence, backups or recovery; Secret content, Reading codes, and full Share links are absent from logs and backups. Removal means deletion from active service storage, not guaranteed forensic zeroization of RAM.
+> **Then** active stored Secret data is removed within sixty seconds of expiration during normal healthy operation. Physical cleanup may be delayed or missed during service/runtime outages, dependency downtime (including PostgreSQL unavailable at startup), or process/virtual-machine suspension/hang. Each subsequent cleanup catches all expired backlog using the original expiration deadlines, not only records expired since the previous tick or within a recent interval; bounded batches may continue across runs, but all expired backlog must be cleared before Secret traffic resumes after recovery. The service never releases expired data, independently of cleanup. Secret records have no disk persistence, backups or recovery; Secret content, Reading codes, and full Share links are absent from logs and backups. Removal means deletion from active service storage, not guaranteed forensic zeroization of RAM.
 >
 > — `spec.md §5, AC-11, verbatim` · full text: [spec.md](../spec.md)
 
@@ -163,7 +163,7 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 - [ ] Test metadata-only backup/restore, empty Redis restart, original expired recognition and unexpired early loss. Never restore payloads or verifiers. Work area: `backend/tests/integration/faults/` (and matching files_hint targets).
 
-- [ ] Fault-inject uncertain PG/Redis commits, runtime/OOM script errors, duplicate maintenance and stale generations, clock rollback and suspension beyond 60s; independently measure running-cleanup deletion bound. Work area: `scripts/verify_retention/` (and matching files_hint targets).
+- [ ] Fault-inject uncertain PG/Redis commits, runtime/OOM script errors, duplicate maintenance and stale generations, clock rollback and suspension beyond 60s; independently measure the normal-healthy-operation deletion target and verify all-expired-backlog catch-up before serving after outages. Work area: `scripts/verify_retention/` (and matching files_hint targets).
 
 - [ ] Record actual runtime and host retention evidence and unresolved launch controls; do not mark independent security approval or production compliance from local tests. Work area: `docs/features/short-live-path/_audit/runtime-security.md` (and matching files_hint targets).
 
@@ -173,14 +173,14 @@ Coverage is this task’s contribution, not a claim that prerequisite/whole-syst
 
 | Case | Behaviour |
 |---|---|
-| PG outage while Redis executes | Retain closed readiness but keep cleanup and measure its deadline. |
+| PG outage while Redis executes, including startup PG down | Retain closed readiness; delayed physical cleanup is accepted. Verify all expired backlog is caught before serving resumes, not <=60s outage erasure or a new scheduler design. |
 | Suspended VM holds old memory | No physical-zeroization claim; verify closed recovery ordering. |
 
 Edge-case sources: [spec.md](../spec.md) §5, AC-07, AC-09, AC-10, AC-11, AC-11b, abridged; [sad.md](../sad.md) §6, S2, S4, S7, abridged. Decisions T1/T2 also follow [data-model.md](../data-model.md) §Open technical decisions, DM-OQ-01…05, abridged.
 
 ## Definition of Done
 
-- [ ] Canary audit has zero payload/code/full-link log/backup hits; fault suites prove no late releases, <=60s deletion while cleanup executes and cleanup-before-serving, or explicitly block launch with evidence.
+- [ ] Canary audit has zero payload/code/full-link log/backup hits; fault suites prove no late releases, <=60s deletion during normal healthy operation and all-expired-backlog cleanup before serving after accepted outage/dependency-down/suspension delay, or explicitly block launch on remaining unmet obligations with evidence.
 
 - [ ] All inlined hard rules still hold; tests cite their AC IDs.
 

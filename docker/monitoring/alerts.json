@@ -1,0 +1,72 @@
+{
+  "groups": [
+    {
+      "name": "slp-private",
+      "rules": [
+        {
+          "alert": "SlpNotReady",
+          "expr": "slp_ready == 0 or absent(slp_ready)",
+          "labels": {
+            "severity": "warning"
+          }
+        },
+        {
+          "alert": "SlpSamplingStale",
+          "expr": "slp_sample_age_seconds > 30 or slp_sample_ok == 0",
+          "labels": {
+            "severity": "warning"
+          }
+        },
+        {
+          "alert": "SlpCleanupEarlyWarning",
+          "expr": "slp_cleanup_age_seconds > 45",
+          "labels": {
+            "severity": "warning"
+          }
+        },
+        {
+          "alert": "SlpCleanupExhaustion",
+          "expr": "slp_cleanup_exhaustions > 0",
+          "labels": {
+            "severity": "warning"
+          }
+        },
+        {
+          "alert": "SlpObservedHealthyDeletionBreach",
+          "expr": "slp_healthy_expired_breach > 0",
+          "labels": {
+            "severity": "warning"
+          }
+        },
+        {
+          "alert": "SlpPayloadCapacity",
+          "expr": "slp_payload_registry >= 900",
+          "labels": {
+            "severity": "warning"
+          }
+        },
+        {
+          "alert": "SlpLimiterCapacity",
+          "expr": "slp_limiter_registry >= 9000",
+          "labels": {
+            "severity": "warning"
+          }
+        },
+        {
+          "alert": "SlpRedisBudget",
+          "expr": "slp_redis_used_bytes / slp_redis_max_bytes > 0.9 or slp_redis_noeviction == 0",
+          "labels": {
+            "severity": "warning"
+          }
+        },
+        {
+          "alert": "SlpMetadataGrowth",
+          "expr": "slp_metadata_bytes > 1073741824 or predict_linear(slp_metadata_bytes[6h], 604800) > 1073741824",
+          "labels": {
+            "severity": "warning"
+          }
+        }
+      ]
+    }
+  ]
+}

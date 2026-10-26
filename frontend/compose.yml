@@ -1,0 +1,24 @@
+# Isolated synthetic frontend checks only; no real credentials/stores.
+services:
+  web:
+    build: {context: ., dockerfile: docker/Dockerfile, target: build}
+    environment: {NEXT_TELEMETRY_DISABLED: "1"}
+    command: [pnpm, start]
+    ports: ["127.0.0.1:${SLP_UI_PORT:-3304}:3000"]
+    logging: {driver: local, options: {max-size: 1m, max-file: "2"}}
+  runtime:
+    profiles: [runtime]
+    build: {context: ., dockerfile: docker/Dockerfile, target: production}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 1s
+      retries: 30
+    logging: {driver: local, options: {max-size: 1m, max-file: "2"}}
+  browser:
+    profiles: [browser]
+    build: {context: ., dockerfile: docker/Dockerfile, target: browser}
+    # Own web network namespace gives real loopback secure-context clipboard APIs.
+    network_mode: service:web
+    environment: {BASE_URL: "http://127.0.0.1:3000"}
+    command: [pnpm, "test:integration"]
+    depends_on: [web]

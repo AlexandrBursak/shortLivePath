@@ -2,7 +2,7 @@
 status: Draft
 owner: "Tech Lead"
 reviewers: ["Tech Lead", "Security Lead"]
-updated_at: "2026-10-22"
+updated_at: "2026-10-23"
 feature_size: M
 target_surfaces: [web-frontend, backend-service]  # approved in §4; downstream stages read this selection
 ---
@@ -21,7 +21,7 @@ target_surfaces: [web-frontend, backend-service]  # approved in §4; downstream 
 **Top-3 quality goals (ordered; full scenarios in §10):**
 
 1. Confidentiality and bounded retention: HTTPS transport; server processing and live operator access are accepted, but no Secret content or Reading codes enter logs, analytics or backups, no full Share link is logged, and no persistent Secret copies are allowed (revised NFR-04).
-2. Expiration and erasure: no new service release at or after expiration; no late display in the normal application; active Secret data removed within 60 seconds while Redis can execute cleanup; expired records cleared before Secret traffic resumes after suspension/hang, without a physical RAM-erasure deadline during that suspension/hang (revised NFR-03). Earlier loss on crash/restart is allowed; confidentiality takes priority over recovery.
+2. Expiration and erasure: no new service release at or after expiration; no late display in the normal application; active Secret data removed within 60 seconds during normal healthy operation; physical cleanup may be delayed/missed during outages, dependency downtime or suspension/hang; all expired backlog is caught by original deadline before Secret traffic resumes (revised NFR-03). Earlier loss on crash/restart is allowed; confidentiality takes priority over recovery.
 3. Usability and performance: preserve exact text; p95 at most 2 seconds at 10 operations per second for Secret text up to 64 KiB; usable from 360 pixels wide with keyboard-operable primary actions (NFR-01, NFR-06). Availability of at least 99.5% per calendar month remains mandatory (NFR-02), not grounds to weaken the first two goals.
 
 All other acceptance criteria and NFRs remain mandatory regardless of ranking.
@@ -61,7 +61,7 @@ All other acceptance criteria and NFRs remain mandatory regardless of ranking.
 
 **Regulatory / external.**
 - Confidential credential data; no jurisdiction-specific certification or legal compliance regime has been supplied or claimed.
-- Spec §6.1 and NFR-03/NFR-04 govern confidentiality, expiration and retention. Secret payloads and Reading code verifiers are excluded from backups and disk persistence. Minimal PostgreSQL link lifecycle metadata is intentionally durable and distinct from Secret records; indefinite retention is explicitly approved, while backup scope for metadata is resolved in deployment design. The approved sixty-second active-record deletion bound applies while Redis can execute cleanup, not to physical RAM erasure during suspension/hang. Recovery clears expired records before Secret traffic resumes. TTL alone is not a bounded active-cleanup proof; explicit cleanup, recovery gating, snapshots, replicas, swap, crash dumps and retained copies require implementation and verification.
+- Spec §6.1 and NFR-03/NFR-04 govern confidentiality, expiration and retention. Secret payloads and Reading code verifiers are excluded from backups and disk persistence. Minimal PostgreSQL link lifecycle metadata is intentionally durable and distinct from Secret records; indefinite retention is explicitly approved, while backup scope for metadata is resolved in deployment design. The approved sixty-second active-record deletion target applies during normal healthy operation. Outages, dependency downtime and suspension/hang may delay or miss physical cleanup; recovery catches all expired backlog by original deadline before Secret traffic resumes. TTL alone is not a bounded active-cleanup proof; explicit cleanup, recovery gating, snapshots, replicas, swap, crash dumps and retained copies require implementation and verification.
 - Expiration does not revoke external credentials or erase Recipient-controlled copies. Security review remains required.
 
 ## 3. Context and scope
@@ -124,7 +124,7 @@ C4Context
 
 **Decision override:** Product Owner withdrew the earlier operator-blind encryption requirement and approved server-readable processing, while retaining the optional Reading code, no-sensitive-log/backup rules and expiration/erasure guarantees. Earlier sections and upstream spec are synchronized rather than leaving contradictory approved requirements.
 
-**Decision override (retention):** Product Owner accepted a scoped active-record deletion guarantee: within sixty seconds while Redis can execute cleanup; no physical RAM-erasure deadline during process/VM suspension or hang; expired records cleared before Secret traffic resumes after recovery. No disk persistence, Secret backups or recovery is introduced. Deletion does not claim forensic RAM zeroization.
+**Decision override (retention):** Product Owner accepted a scoped active-record deletion guarantee: within sixty seconds during normal healthy operation; outage/dependency-down/suspension delay is accepted, with all expired backlog caught before traffic resumes; no physical RAM-erasure deadline during process/VM suspension or hang; expired records cleared before Secret traffic resumes after recovery. No disk persistence, Secret backups or recovery is introduced. Deletion does not claim forensic RAM zeroization.
 
 ## 5. Building block view
 
@@ -671,15 +671,15 @@ sequenceDiagram
         alt Redis cannot clean or time unsafe
             S->>S: Stay closed and report aggregate failure
         else Cleanup can execute
-            loop Bounded due batches without unbounded scans
+            loop Bounded batches of ALL expired backlog, no recent-window cutoff
                 S->>E: Delete expired payload/verifier records and due counter state
                 E-->>S: Confirm deletion or safe failure
             end
             alt Cleanup fails or cannot meet active deletion bound
-                S->>S: Stay closed, bounded retry only within deletion budget, aggregate alert
+                S->>S: Stay closed, bounded retry and aggregate alert; carry due debt forward
             else Cleanup confirmed
                 alt PostgreSQL unavailable or time/current-run changed
-                    S->>S: Stay closed, continue executable Redis cleanup
+                    S->>S: Stay closed; safe cleanup may continue, outage delay is accepted
                 else Continuity lost or key rotation
                     S->>S: Ensure previous owner stopped, observe inherited sixty-second quiet interval
                     S->>S: Repeat on discontinuity, timer alone never reopens traffic
@@ -693,9 +693,9 @@ sequenceDiagram
     Note over S,E: No quota leases, pending-slot reconciliation, payload restore or physical RAM-erasure claim
 ```
 
-**Asynchronous maintenance and failure handling.** The service's own scheduled loop is the trigger and handler, not an external scheduler, message bus or worker surface. Check a run identity/ownership key first to suppress duplicate runs, while idempotent deletion and current recovery fencing make replay safe. A completed old run must never authorize a newer recovery generation. The dead-letter branch means a failed maintenance-run state and aggregate alert inside the existing service, not a durable payload queue or a new datastore entity. N, backoff, run-key/ownership representation and recovery-fencing details are unresolved technical parameters within §11's cleanup/recovery algorithm obligation, not approved numbers or a schema commitment. Retries remain bounded by the active deletion deadline, and exhaustion must not be silently treated as successful cleanup. Continued recovery attempts do not reopen traffic before a confirmed sweep. Alerts and failure records contain no Secret, code, raw token, full URL or address.
+**Asynchronous maintenance and failure handling.** The service's own scheduled loop is the trigger and handler, not an external scheduler, message bus or worker surface. Check a run identity/ownership key first to suppress duplicate runs, while idempotent deletion and current recovery fencing make replay safe. A completed old run must never authorize a newer recovery generation. The dead-letter branch means a failed maintenance-run state and aggregate alert inside the existing service, not a durable payload queue or a new datastore entity. N, backoff, run-key/ownership representation and recovery-fencing details are unresolved technical parameters within §11's cleanup/recovery algorithm obligation, not approved numbers or a schema commitment. Healthy-operation retries remain bounded by the sixty-second target; outages may delay physical deletion and subsequent bounded runs must catch all expired backlog without a recent-interval lower cutoff, and exhaustion must not be silently treated as successful cleanup. Continued recovery attempts do not reopen traffic before a confirmed sweep. Alerts and failure records contain no Secret, code, raw token, full URL or address.
 
-**Retention and outage boundaries.** The <=60-second active-record deletion bound remains mandatory while Redis can execute cleanup. TTL, a five-second tick or a fail-closed API alone is not proof; T8/T18 must test cleanup under faults and capacity. No physical RAM-erasure deadline applies during suspension/hang. Startup/recovery closes traffic, establishes current single-process ownership and safe PostgreSQL time, clears expired records and only then reopens. Continue possible Redis cleanup during PostgreSQL outage. Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
+**Retention and outage boundaries.** The <=60-second active-record deletion target applies during normal healthy operation, not merely whenever Redis alone is reachable. Physical cleanup may be delayed or missed during service/runtime outages, dependency downtime (including PostgreSQL unavailable at startup), or suspension/hang. Each subsequent cleanup selects all expired backlog by original deadline, with no recent-interval lower cutoff; bounded batches continue until all due debt is cleared before Secret traffic resumes. TTL, a scheduler tick or closed readiness alone is not proof. Startup/recovery establishes current ownership, safe PostgreSQL time and dependencies before reopening. Continuing safe cleanup during PostgreSQL outage is useful but is not an outage erasure guarantee or a reason to redesign the scheduler (ADR-0004 amendment, 2026-10-23). Lost payloads are never reconstructed. Address/key continuity keeps ADR-0009 quiet-window recovery, while exact quota reservation reconciliation is deferred.
 
 **Non-runtime verification for AC-11 and NFR-04.** Audit and canary-test protected transport, proxy/app/datastore/telemetry logging, cache exclusions, metadata-only backups and restore, disabled Redis persistence, swap/dumps and infrastructure snapshot paths as specified in §§7–10. These configuration/security checks are required in addition to the runtime branches above. A diagram, successful deletion or an expired UI does not prove that no sensitive copies reached logs, disks or backups. No new §5 participant is needed and no new ADR is automatically created.
 
@@ -732,18 +732,20 @@ Size M and route standard are read from .size and .route. The flow list and AC c
 
 ## 7. Deployment view
 
+**NPM-managed staging variant (ADR-0010).** Product Owner approved direct external Nginx Proxy Manager routing to API/frontend, without the inner application nginx. The self-contained Compose/nginx variant remains supported for local/standalone use. Both variants retain one public HTTPS origin, direct `/api/` routing, private health/metrics, one exact trusted immediate proxy with sanitized client addresses, no request-bearing logs/cache/disk buffering and no upstream retries. NPM-direct requires explicit private upstream bindings, Docker-aware NPM-only access restrictions and verification of active generated host-level logging/header rules before cutover. Ordinary app updates preserve PostgreSQL/Redis, keys and volumes. This is an accepted topology, not a claim of deployment or remote verification; see [ADR-0010](adr/0010-route-staging-directly-through-nginx-proxy-manager.md).
+
 
 
 **Topology.** Initial deployment uses one host and Docker Compose: HTTPS reverse proxy, Next.js Web UI, one AdonisJS Secret API replica, PostgreSQL Link Metadata and a dedicated ephemeral Redis instance. Only HTTPS is public; PostgreSQL and Redis are private services. Domain, host sizing and exact image versions are not supplied and must be pinned before deployment. This topology is approved, not deployed or benchmarked.
 
 PostgreSQL uses a persistent volume and metadata-only backups. Redis has no persistent volume, AOF, RDB save schedule or Secret backups; disable save-on-shutdown and external Redis/VM memory snapshots. Configure the approved 256 MiB Redis maxmemory with noeviction. Secret content and code verifiers must not reach PostgreSQL, logs, disk persistence, backups or monitoring. Host swap and process/core memory dumps are disabled, and VM/host suspend-with-memory or memory-inclusive snapshot paths must be excluded and audited before launch. Metadata backup restoration never restores Secret payloads; Redis starts empty after restart.
 
-**Lifecycle and readiness.** Run API-owned bounded cleanup every five seconds. Close traffic on startup/reconnect/unsafe time or runtime discontinuity; establish one current process/run, check dependencies and PostgreSQL time, clear expired payloads and only then reopen. Stale callbacks cannot reopen a newer recovery run; API owners must not overlap. Continue executable Redis cleanup during PostgreSQL outage. Same-key surviving counters remain; continuity loss/key rotation retains old-owner shutdown plus the >=60-second quiet interval and cleanup (ADR-0009). There is no v1 quota-lease reconciliation. T8/T18 must prove the unchanged cleanup/expiry guarantees before launch.
+**Lifecycle and readiness.** Run API-owned bounded cleanup every five seconds. Close traffic on startup/reconnect/unsafe time or runtime discontinuity; establish one current process/run, check dependencies and PostgreSQL time, clear expired payloads and only then reopen. Stale callbacks cannot reopen a newer recovery run; API owners must not overlap. Safe Redis cleanup may continue during PostgreSQL outage; missed physical cleanup is accepted and all expired backlog must be caught before serving resumes (ADR-0004 amendment). Same-key surviving counters remain; continuity loss/key rotation retains old-owner shutdown plus the >=60-second quiet interval and cleanup (ADR-0009). There is no v1 quota-lease reconciliation. T8/T18 must verify the amended healthy-operation cleanup target, all-expired-backlog catch-up before serving and unchanged no-expired-release rule before launch.
 
 **Monitoring (aggregate only).**
 - Service and dependency readiness, external disposable synthetic creation/read checks, operation latency and failures; use NFR-01/NFR-02 targets without treating configured values as measured results.
 - Active Secret count versus 1000, Redis used/max memory, capacity/creation/code-limit rejections, verifier queue/concurrency and counter cardinality.
-- Cleanup last-success age, oldest expired active record, cleanup batch failures and recovery duration. Page on any observed expired release, late display or deletion violation; fail readiness if bounded cleanup cannot be assured. Any concrete early-warning threshold must be below the sixty-second bound and validated under load, not used to relax that bound.
+- Cleanup last-success age, oldest expired active record, cleanup batch failures and recovery duration. Page on any observed expired release, late display or healthy-operation deletion violation; report accepted outage-delayed cleanup and backlog separately, without treating it as healthy-target attainment; fail readiness if bounded cleanup cannot be assured. Any concrete early-warning threshold must be below the sixty-second bound and validated under load, not used to relax that bound.
 - Instrument OpenTelemetry/Prometheus/Grafana with allowlisted attributes and route templates only. No request/response bodies, code/token values, raw paths containing credentials, client addresses, browser session replay or sensitive exception locals. Monitoring components are operational dependencies, not additional product surfaces.
 
 **Capacity and scaling.** Keep one API/cleanup owner initially; do not add replicas without reviewing cross-instance admission, cleanup ownership, recovery fencing and clock behavior. At 1000 active Secrets, counter-cap exhaustion or Redis memory refusal, reject new creation safely rather than evicting existing Secrets. The 256 MiB budget is initial configuration, not a guaranteed process RSS ceiling or throughput result; Redis overhead and container/host headroom must be measured. PostgreSQL metadata grows indefinitely under the approved policy and requires disk-growth monitoring; do not introduce automatic metadata deletion silently. Scale/resize only after measured bottlenecks and verification of the same retention/access contracts.
@@ -783,12 +785,13 @@ PostgreSQL uses a persistent volume and metadata-only backups. Redis has no pers
 | 0001 | [Build a responsive web frontend and backend service](adr/0001-build-responsive-web-frontend-and-backend-service.md) | Accepted | §4 |
 | 0002 | [Use a neutral Next.js server shell with browser-only Secret processing](adr/0002-use-neutral-nextjs-shell-with-browser-only-secret-processing.md) | Superseded by 0003 | §4 |
 | 0003 | [Use server-readable ephemeral Secrets with an optional Reading code](adr/0003-use-server-readable-ephemeral-secrets-with-optional-reading-code.md) | Accepted; retention amended by 0004 | §4 |
-| 0004 | [Scope ephemeral deletion to running cleanup and gate recovery before serving](adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md) | Accepted | §4 |
+| 0004 | [Scope ephemeral deletion to running cleanup and gate recovery before serving](adr/0004-scope-ephemeral-deletion-and-gate-recovery-before-serving.md) | Accepted; outage/backlog amendment approved 2026-10-23 | §4 / §6 S7 |
 | 0005 | [Persist minimal link lifecycle metadata indefinitely](adr/0005-persist-minimal-link-lifecycle-metadata-indefinitely.md) | Accepted | §4–5 |
 | 0006 | [Bound Argon2id Reading code work and input](adr/0006-bound-argon2id-reading-code-work-and-input.md) | Superseded by 0009; non-quota profile retained | §§4/8/11 |
 | 0007 | [Canonicalize trusted addresses and fence quota resets](adr/0007-canonicalize-trusted-addresses-and-fence-quota-resets.md) | Superseded by 0009; address/quiet-window policy retained | §§7/8/11 |
 | 0008 | [Anchor lifetime and service time in PostgreSQL](adr/0008-anchor-lifetime-and-service-time-in-postgresql.md) | Accepted | §§4/6/8 |
 | 0009 | [Keep basic limits and defer exact concurrent quotas](adr/0009-keep-basic-limits-and-defer-exact-concurrent-quotas.md) | Accepted | §§4/6/8/11 |
+| 0010 | [Route staging directly through the existing Nginx Proxy Manager](adr/0010-route-staging-directly-through-nginx-proxy-manager.md) | Accepted; live cutover pending | §§5/7/8 |
 
 ADR files live under docs/features/short-live-path/adr/ and are indexed above. ADR-0002 is historical and intentionally superseded; its original browser-only requirement is not current.
 
@@ -805,8 +808,8 @@ The following are approved targets and verification obligations, not results. Ta
 
 **QG-2. Expiration, active-record cleanup and failure recovery**
 - **When:** Requests race the expiration boundary, cleanup is delayed, the page is offline/backgrounded, or API/Redis/VM execution is interrupted and resumed.
-- **Then (NFR-03, verbatim):** Zero new releases by the service at or after expiration, checked immediately before release; zero late displays in the normal application; active Secret data removed no later than 60 seconds after expiration while Redis can execute cleanup; after suspension/hang, expired records cleared before Secret traffic resumes; no physical RAM-erasure deadline during suspension/hang
-- **How verify:** Use controlled boundary clocks and delayed responses, concurrent reads, browser wall-clock changes, offline timers and suspension/back-forward-cache tests. Assert the final pre-release and pre-display checks independently of Redis TTL. Inspect active payload/verifier records through expiry and the approved cleanup interval while cleanup can execute. Suspend longer than that interval and verify no physical erasure claim is made during suspension, expired records clear before Secret readiness resumes, and startup/reconnection/metadata restore cannot resurrect content. Include early loss and dependency errors, not only happy-path TTL tests.
+- **Then (NFR-03, verbatim):** Zero new releases by the service at or after expiration, checked immediately before release; zero late displays in the normal application; active Secret data removed no later than 60 seconds after expiration during normal healthy operation; physical cleanup may be delayed or missed during outages, dependency downtime or suspension/hang; subsequent cleanup catches all expired backlog by original deadline, not only a recent interval, and clears it before Secret traffic resumes
+- **How verify:** Use controlled boundary clocks and delayed responses, concurrent reads, browser wall-clock changes, offline timers and suspension/back-forward-cache tests. Assert the final pre-release and pre-display checks independently of Redis TTL. Inspect active payload/verifier records through expiry and the approved sixty-second interval during normal healthy operation. Separately test outages/dependency downtime (including startup PostgreSQL down), accepted delayed erasure and all-expired-backlog catch-up without a recent-window cutoff before serving resumes. Suspend longer than that interval and verify no physical erasure claim is made during suspension, expired records clear before Secret readiness resumes, and startup/reconnection/metadata restore cannot resurrect content. Include early loss and dependency errors, not only happy-path TTL tests.
 
 **QG-3. End-to-end performance**
 - **When:** Representative mobile/desktop browsers perform creation and reading with and without Reading codes at the approved workload and maximum text size.

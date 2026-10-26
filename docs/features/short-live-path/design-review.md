@@ -1,10 +1,14 @@
 ---
+
+> Historical design-pass evidence below is retained. Current cleanup policy is the Product Owner-approved 2026-10-23 amendment in ADR-0004: <=60s during normal healthy operation; outages/dependency downtime/suspension may delay physical cleanup; later sweeps catch all expired backlog by original deadline before traffic resumes. Older Redis-alone/executable-cleanup wording below is historical, not the current guarantee. No expired release is permitted; minimal metadata stays indefinite, and a month-old backlog is illustrative only. This note is documentation disposition, not runtime evidence.
 status: ReviewedWithDeferrals
-updated_at: "2026-10-22"
+updated_at: "2026-10-23"
 feature_size: M
 route: standard
 interview_depth: medium
 ---
+
+> Historical design-pass evidence below is retained. Current cleanup policy is the Product Owner-approved 2026-10-23 amendment in ADR-0004: <=60s during normal healthy operation; outages/dependency downtime/suspension may delay physical cleanup; later sweeps catch all expired backlog by original deadline before traffic resumes. Older Redis-alone/executable-cleanup wording below is historical, not the current guarantee. No expired release is permitted; minimal metadata stays indefinite, and a month-old backlog is illustrative only. This note is documentation disposition, not runtime evidence.
 
 # Design review — short-live-path
 
