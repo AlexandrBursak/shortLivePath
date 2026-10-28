@@ -25,3 +25,11 @@ test('theme switch applies before paint under the nonce CSP and is remembered',a
  await expect(page.getByRole('radio',{name:'Light'})).toBeChecked();
  expect(violations).toEqual([]);
 });
+test('footer is pinned to the bottom of a short page',async({page})=>{
+ await page.setViewportSize({width:1600,height:900});
+ await page.goto('/s/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+ const footer=page.getByRole('contentinfo');await expect(footer).toContainText('RexSoft');
+ const bottom=await footer.evaluate(el=>el.getBoundingClientRect().bottom+window.scrollY);
+ const pageHeight=await page.evaluate(()=>Math.max(window.innerHeight,document.documentElement.scrollHeight));
+ expect(Math.abs(bottom-pageHeight)).toBeLessThan(2);
+});
