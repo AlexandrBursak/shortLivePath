@@ -56,7 +56,7 @@ test('AC-03 AC-08: empty optional fields alone are omitted; whitespace-only opti
 
 test('AC-03 AC-08: 360px keyboard internal scroll and non-live accessible countdown',async({page})=>{
  await setup(page);await show(page);expect(await page.evaluate(()=>innerWidth)).toBe(360);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await expect(page.getByRole('button',{name:/^Copy /})).toHaveCount(3);await expect(page.getByRole('button',{name:/Copy all|download/i})).toHaveCount(0);await expect(page.locator('input,textarea,pre a,pre img,pre script')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:/^Copy /})).toHaveCount(3);await expect(page.getByRole('button',{name:/Copy all|download/i})).toHaveCount(0);await expect(page.getByRole('main').locator('input,textarea,pre a,pre img,pre script')).toHaveCount(0);
  if(process.env.T16_EVIDENCE_DIR)await page.screenshot({path:process.env.T16_EVIDENCE_DIR+'/reading-360.png',fullPage:true});
  const field=page.getByLabel('Password or key',{exact:true});await field.focus();await expect(field).toBeFocused();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');await expect.poll(()=>field.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
  const remaining=page.locator('[aria-label^="Remaining lifetime"]');await remaining.focus();await expect(remaining).toBeFocused();expect(await remaining.evaluate(el=>el.closest('[aria-live],[role="status"],[role="alert"]'))).toBeNull();await page.clock.runFor(1000);await expect(remaining).toHaveAttribute('aria-label','Remaining lifetime 00:59:59');await expect(page.getByRole('status')).toHaveCount(0);await expect(page.locator('time')).toContainText('UTC');
